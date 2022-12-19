@@ -1,4 +1,4 @@
-ALL_CONTRACTS = erc20-token erc20-token-sale erc20-token-sale-counters erc20-token-sale-invest erc20-token-sale-update erc20-test erc20-test-call
+ALL_CONTRACTS = erc20-token erc20-test erc20-test-call
 CONTRACT_TARGET_DIR = target/wasm32-unknown-unknown/release
 
 prepare:
