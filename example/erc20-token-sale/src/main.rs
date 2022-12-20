@@ -1,9 +1,7 @@
 #![no_std]
 #![no_main]
-
-#[cfg(not(target_arch = "wasm32"))]
-compile_error!("target arch should be wasm32: compile with '--target wasm32-unknown-unknown'");
 extern crate alloc;
+pub mod mods;
 
 use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
@@ -19,7 +17,14 @@ use casper_erc20::constants::{
 use casper_erc20::Address;
 use casper_types::account::AccountHash;
 use casper_types::bytesrepr::ToBytes;
+use mods::InvestingError;
 // Importing specific Casper types.
+use crate::mods::constants::{
+    COUNT_INVESTMENTS_KEY, COUNT_INVESTORS_KEY, DEPOSIT_PURSE, ENTRY_POINT_COUNTERS,
+    ENTRY_POINT_INIT, ENTRY_POINT_INVEST, INVESTING_AMOUNT, LEDGER, ONE, TOKEN_PRICE_IN_CSPR,
+    TOKEN_SALE_CONTRACT_HASH, TOKEN_SALE_CONTRACT_PKG_HASH, TOKEN_SALE_CONTRACT_PKG_UREF,
+    TOKEN_SALE_CONTRACT_VERSION_KEY, ZERO,
+};
 use casper_types::contracts::NamedKeys;
 use casper_types::{
     runtime_args, ContractHash, ContractPackageHash, Parameter, RuntimeArgs, U256, U512,
@@ -27,13 +32,6 @@ use casper_types::{
 use casper_types::{
     ApiError, CLType, CLValue, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Key,
 };
-use erc20_token_sale::constants::{
-    COUNT_INVESTMENTS_KEY, COUNT_INVESTORS_KEY, DEPOSIT_PURSE, ENTRY_POINT_COUNTERS,
-    ENTRY_POINT_INIT, ENTRY_POINT_INVEST, INVESTING_AMOUNT, LEDGER, ONE, TOKEN_PRICE_IN_CSPR,
-    TOKEN_SALE_CONTRACT_HASH, TOKEN_SALE_CONTRACT_PKG_HASH, TOKEN_SALE_CONTRACT_PKG_UREF,
-    TOKEN_SALE_CONTRACT_VERSION_KEY, ZERO,
-};
-use erc20_token_sale::InvestingError;
 
 #[no_mangle]
 pub extern "C" fn init() {
