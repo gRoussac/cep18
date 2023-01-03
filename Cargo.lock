@@ -581,9 +581,18 @@ dependencies = [
 name = "erc20-token-sale"
 version = "0.1.0"
 dependencies = [
- "base64 0.20.0",
  "casper-contract",
  "casper-erc20",
+ "casper-types",
+]
+
+[[package]]
+name = "erc20-token-sale-tests"
+version = "0.1.0"
+dependencies = [
+ "casper-contract",
+ "casper-engine-test-support",
+ "casper-execution-engine",
  "casper-types",
 ]
 

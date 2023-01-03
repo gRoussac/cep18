@@ -8,7 +8,7 @@ edition = "2018"
 casper-contract = "1.4.4"
 casper-erc20 = { path = "../../erc20" }
 casper-types = "1.5"
-base64 = { version = "0.20.0", default-features = false, features = ["alloc"] }
+# base64 = { version = "0.20.0", default-features = false, features = ["alloc"] }
 
 [[bin]]
 name = "erc20_token_sale"

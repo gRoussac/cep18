@@ -4,6 +4,7 @@ members = [
     "testing/tests",
     "testing/erc20-test",
     "testing/erc20-test-call",
+    "testing/erc20-token-sale-tests",
     "example/erc20-token",
     "example/erc20-token-sale",
     "example/erc20-tests",

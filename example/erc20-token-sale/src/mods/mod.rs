@@ -1,4 +1,5 @@
 pub mod constants;
+pub mod utils;
 
 use casper_types::ApiError;
 
