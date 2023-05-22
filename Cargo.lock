@@ -592,8 +592,10 @@ version = "0.1.0"
 dependencies = [
  "casper-contract",
  "casper-engine-test-support",
+ "casper-erc20",
  "casper-execution-engine",
  "casper-types",
+ "erc20-token-sale",
 ]
 
 [[package]]

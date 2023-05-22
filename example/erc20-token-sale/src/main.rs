@@ -3,11 +3,6 @@
 extern crate alloc;
 pub mod mods;
 
-use crate::mods::constants::{
-    COUNT_INVESTMENTS_KEY, COUNT_INVESTORS_KEY, DEPOSIT_PURSE, ENTRY_POINT_INIT,
-    ENTRY_POINT_INVEST, LEDGER, TOKEN_SALE_CONTRACT_HASH, TOKEN_SALE_CONTRACT_PKG_HASH,
-    TOKEN_SALE_CONTRACT_PKG_UREF, TOKEN_SALE_CONTRACT_VERSION_KEY, ZERO,
-};
 use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::vec;
@@ -16,15 +11,18 @@ use casper_contract::contract_api::runtime::revert;
 use casper_contract::contract_api::system::{create_purse, transfer_from_purse_to_purse};
 use casper_contract::contract_api::{runtime, storage};
 use casper_contract::unwrap_or_revert::UnwrapOrRevert;
-use casper_erc20::constants::{
-    BALANCE_OF_ENTRY_POINT_NAME, ERC20_TOKEN_CONTRACT_KEY_NAME, OWNER_RUNTIME_ARG_NAME,
-};
+use casper_erc20::constants::{ERC20_TOKEN_CONTRACT_KEY_NAME, OWNER_RUNTIME_ARG_NAME};
 use casper_types::account::AccountHash;
 use casper_types::contracts::NamedKeys;
 use casper_types::system::standard_payment::ARG_AMOUNT;
 use casper_types::{runtime_args, ApiError, Parameter, RuntimeArgs, URef, U512};
 use casper_types::{CLType, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Key};
-use mods::constants::{PURSE_NAME_VALUE, TOKEN_PRICE_IN_CSPR};
+use mods::constants::{
+    COUNT_INVESTMENTS_KEY, COUNT_INVESTORS_KEY, DEPOSIT_PURSE, ENTRY_POINT_INIT,
+    ENTRY_POINT_INVEST, LEDGER, PURSE_NAME_VALUE, TOKEN_PRICE_IN_CSPR, TOKEN_SALE_CONTRACT_HASH,
+    TOKEN_SALE_CONTRACT_PKG_HASH, TOKEN_SALE_CONTRACT_PKG_UREF, TOKEN_SALE_CONTRACT_VERSION_KEY,
+    ZERO,
+};
 use mods::utils::{_get_owner_hash, get_key_uref, update_ledger_record};
 use mods::InvestingError;
 
@@ -42,7 +40,7 @@ pub extern "C" fn init() {
 // hash and returns the deposit purse, with add access, to the immediate caller.
 #[no_mangle]
 pub extern "C" fn invest() {
-    update_ledger_record(runtime::get_caller().to_string());
+    update_ledger_record(&runtime::get_caller().to_string());
 
     let investing_amount: U512 = runtime::get_named_arg(ARG_AMOUNT);
     let bidder_purse: URef = match runtime::get_key(PURSE_NAME_VALUE) {
@@ -114,7 +112,7 @@ fn create_named_keys() -> BTreeMap<String, Key> {
     let token_key_hash = runtime::get_key(ERC20_TOKEN_CONTRACT_KEY_NAME)
         .unwrap_or_revert_with(InvestingError::MissingERC20TokenURef);
     named_keys.insert(ERC20_TOKEN_CONTRACT_KEY_NAME.into(), token_key_hash);
-    // Set neamed key for owner of the token_sale
+    // Set named key for owner of the token_sale
     named_keys.insert(OWNER_RUNTIME_ARG_NAME.into(), runtime::get_caller().into());
     named_keys
 }
@@ -128,15 +126,6 @@ fn create_entry_points() -> EntryPoints {
         ENTRY_POINT_INVEST,
         vec![Parameter::new(ARG_AMOUNT, CLType::U512)],
         CLType::URef,
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    ));
-
-    // This establishes the `balance_of` entry point.
-    entry_points.add_entry_point(EntryPoint::new(
-        BALANCE_OF_ENTRY_POINT_NAME,
-        vec![],
-        CLType::U256,
         EntryPointAccess::Public,
         EntryPointType::Contract,
     ));

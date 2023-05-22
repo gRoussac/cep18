@@ -16,3 +16,7 @@ path = "src/main.rs"
 bench = false
 doctest = false
 test = false
+
+[lib]
+name = "erc20_token_sale"
+path = "src/lib.rs"
