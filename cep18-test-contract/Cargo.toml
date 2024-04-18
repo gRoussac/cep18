@@ -2,7 +2,7 @@
 name = "cep18-test-contract"
 version = "1.2.0"
 authors = ["Michał Papierski <michal@casperlabs.io>"]
-edition = "2018"
+edition = "2021"
 
 [[bin]]
 name = "cep18_test_contract"
@@ -12,5 +12,5 @@ doctest = false
 test = false
 
 [dependencies]
-casper-contract = "3.0.0"
-casper-types = "3.0.0"
+casper-contract = "4.0.0"
+casper-types = "4.0.1"

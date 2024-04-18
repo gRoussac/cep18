@@ -1,10 +1,9 @@
 //! Implementation of balances.
+use crate::{constants::BALANCES, error::Cep18Error, utils};
 use alloc::string::String;
-
+use base64::prelude::*;
 use casper_contract::{contract_api::storage, unwrap_or_revert::UnwrapOrRevert};
 use casper_types::{bytesrepr::ToBytes, Key, URef, U256};
-
-use crate::{constants::BALANCES, error::Cep18Error, utils};
 
 /// Creates a dictionary item key for a dictionary item, by base64 encoding the Key argument
 /// since stringified Keys are too long to be used as dictionary keys.
@@ -17,7 +16,7 @@ fn make_dictionary_item_key(owner: Key) -> String {
     // characters.
     // Even if the preimage increased in size we still have extra space but even in case of much
     // larger preimage we can switch to base85 which has ratio of 4:5.
-    base64::encode(preimage)
+    BASE64_STANDARD.encode(preimage)
 }
 
 /// Getter for the "balances" dictionary URef.

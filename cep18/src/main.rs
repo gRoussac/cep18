@@ -19,11 +19,9 @@ use alloc::{
     vec,
     vec::Vec,
 };
-
 use allowances::{get_allowances_uref, read_allowance_from, write_allowance_to};
 use balances::{get_balances_uref, read_balance_from, transfer_balance, write_balance_to};
-use entry_points::generate_entry_points;
-
+use base64::prelude::*;
 use casper_contract::{
     contract_api::{
         runtime::{self, get_caller, get_key, get_named_arg, put_key, revert},
@@ -35,13 +33,13 @@ use casper_types::{
     bytesrepr::ToBytes, contracts::NamedKeys, runtime_args, CLValue, ContractHash,
     ContractPackageHash, Key, RuntimeArgs, U256,
 };
-
 use constants::{
     ACCESS_KEY_NAME_PREFIX, ADDRESS, ADMIN_LIST, ALLOWANCES, AMOUNT, BALANCES,
     CONTRACT_NAME_PREFIX, CONTRACT_VERSION_PREFIX, DECIMALS, ENABLE_MINT_BURN, EVENTS_MODE,
     HASH_KEY_NAME_PREFIX, INIT_ENTRY_POINT_NAME, MINTER_LIST, NAME, NONE_LIST, OWNER, PACKAGE_HASH,
     RECIPIENT, SECURITY_BADGES, SPENDER, SYMBOL, TOTAL_SUPPLY,
 };
+use entry_points::generate_entry_points;
 pub use error::Cep18Error;
 use events::{
     init_events, Burn, ChangeSecurity, DecreaseAllowance, Event, IncreaseAllowance, Mint,
@@ -280,7 +278,7 @@ pub extern "C" fn init() {
     let security_badges_dict = storage::new_dictionary(SECURITY_BADGES).unwrap_or_revert();
     dictionary_put(
         security_badges_dict,
-        &base64::encode(Key::from(get_caller()).to_bytes().unwrap_or_revert()),
+        &BASE64_STANDARD.encode(Key::from(get_caller()).to_bytes().unwrap_or_revert()),
         SecurityBadge::Admin,
     );
 
@@ -295,7 +293,7 @@ pub extern "C" fn init() {
         for minter in minter_list {
             dictionary_put(
                 security_badges_dict,
-                &base64::encode(minter.to_bytes().unwrap_or_revert()),
+                &BASE64_STANDARD.encode(minter.to_bytes().unwrap_or_revert()),
                 SecurityBadge::Minter,
             );
         }
@@ -304,7 +302,7 @@ pub extern "C" fn init() {
         for admin in admin_list {
             dictionary_put(
                 security_badges_dict,
-                &base64::encode(admin.to_bytes().unwrap_or_revert()),
+                &BASE64_STANDARD.encode(admin.to_bytes().unwrap_or_revert()),
                 SecurityBadge::Admin,
             );
         }
