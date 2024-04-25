@@ -26,7 +26,7 @@ use entry_points::generate_entry_points;
 
 use casper_contract::{
     contract_api::{
-        runtime::{self, get_caller, get_key, get_named_arg, put_key, revert},
+        runtime::{self, get_call_stack, get_caller, get_key, get_named_arg, put_key, revert},
         storage::{self, dictionary_put},
     },
     unwrap_or_revert::UnwrapOrRevert,
@@ -35,11 +35,12 @@ use casper_types::{
     addressable_entity::{EntityKindTag, NamedKeys},
     bytesrepr::ToBytes,
     contract_messages::MessageTopicOperation,
-    runtime_args, CLValue, Key, U256,
+    contracts::{ContractHash, ContractPackageHash},
+    runtime_args, CLValue, Key, PackageHash, U256,
 };
 
 use constants::{
-    ACCESS_KEY_NAME_PREFIX, ADDRESS, ADMIN_LIST, ALLOWANCES, AMOUNT, BALANCES, CONTRACT_HASH,
+    ACCESS_KEY_NAME_PREFIX, ADDRESS, ADMIN_LIST, ALLOWANCES, AMOUNT, BALANCES,
     CONTRACT_NAME_PREFIX, CONTRACT_VERSION_PREFIX, DECIMALS, ENABLE_MINT_BURN, EVENTS, EVENTS_MODE,
     HASH_KEY_NAME_PREFIX, INIT_ENTRY_POINT_NAME, MINTER_LIST, NAME, NONE_LIST, OWNER, PACKAGE_HASH,
     RECIPIENT, SECURITY_BADGES, SPENDER, SYMBOL, TOTAL_SUPPLY,
@@ -369,10 +370,11 @@ pub extern "C" fn change_security() {
 pub fn upgrade(name: &str) {
     let entry_points = generate_entry_points();
 
-    let contract_package_hash = runtime::get_key(&format!("{HASH_KEY_NAME_PREFIX}{name}"))
+    let old_contract_package_hash = runtime::get_key(&format!("{HASH_KEY_NAME_PREFIX}{name}"))
         .unwrap_or_revert()
-        .into_package_hash()
+        .into_entity_hash()
         .unwrap_or_revert_with(Cep18Error::MissingPackageHashForUpgrade);
+    let contract_package_hash = PackageHash::new(old_contract_package_hash.value());
 
     let previous_contract_hash = runtime::get_key(&format!("{CONTRACT_NAME_PREFIX}{name}"))
         .unwrap_or_revert()

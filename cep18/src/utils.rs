@@ -15,6 +15,7 @@ use casper_types::{
     api_error,
     bytesrepr::{self, FromBytes, ToBytes},
     system::Caller,
+    system::Caller,
     ApiError, CLTyped, Key, URef, U256,
 };
 
@@ -46,9 +47,10 @@ where
 /// For `Session` and `StoredSession` variants it will return account hash, and for `StoredContract`
 /// case it will use contract package hash as the address.
 fn call_stack_element_to_address(call_stack_element: Caller) -> Key {
+fn call_stack_element_to_address(call_stack_element: Caller) -> Key {
     match call_stack_element {
-        Caller::Initiator { account_hash } => Key::Account(account_hash),
-        Caller::Entity { package_hash, .. } => Key::Hash(package_hash.value()),
+        Caller::Initiator { account_hash } => Key::from(account_hash),
+        Caller::Entity { package_hash, .. } => Key::from(package_hash),
     }
 }
 
