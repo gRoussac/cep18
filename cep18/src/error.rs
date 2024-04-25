@@ -48,6 +48,7 @@ pub enum Cep18Error {
     CannotTargetSelfUser = 60017,
     InvalidBurnTarget = 60018,
     MissingPackageHashForUpgrade = 60019,
+    MissingContractHashForUpgrade = 60020,
 }
 
 impl From<Cep18Error> for ApiError {

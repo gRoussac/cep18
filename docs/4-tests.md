@@ -76,8 +76,8 @@ Expand the example below to see a subset of the required constants for this proj
 // File https://github.com/casper-ecosystem/cep18/blob/dev/tests/src/utility/installer_request_builders.rs
 
 use casper_engine_test_support::{
-    ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_ADDR,
-    MINIMUM_ACCOUNT_CREATION_BALANCE, PRODUCTION_RUN_GENESIS_REQUEST,
+    ExecuteRequestBuilder, LmdbWasmTestBuilder, DEFAULT_ACCOUNT_ADDR,
+    MINIMUM_ACCOUNT_CREATION_BALANCE, LOCAL_GENESIS_REQUEST,
 };
 use casper_execution_engine::core::engine_state::ExecuteRequest;
 use casper_types::{
@@ -121,7 +121,7 @@ pub(crate) cep18_test_contract_package: ContractPackageHash,
 
 // Setting up the test instance of CEP-18.
 
-pub(crate) fn setup() -> (InMemoryWasmTestBuilder, TestContext) {
+pub(crate) fn setup() -> (LmdbWasmTestBuilder, TestContext) {
     setup_with_args(runtime_args! {
         ARG_NAME => TOKEN_NAME,
         ARG_SYMBOL => TOKEN_SYMBOL,
@@ -132,9 +132,9 @@ pub(crate) fn setup() -> (InMemoryWasmTestBuilder, TestContext) {
 
 // Establishing test accounts.
 
-pub(crate) fn setup_with_args(install_args: RuntimeArgs) -> (InMemoryWasmTestBuilder, TestContext) {
-    let mut builder = InMemoryWasmTestBuilder::default();
-    builder.run_genesis(&PRODUCTION_RUN_GENESIS_REQUEST);
+pub(crate) fn setup_with_args(install_args: RuntimeArgs) -> (LmdbWasmTestBuilder, TestContext) {
+    let mut builder = LmdbWasmTestBuilder::default();
+    builder.run_genesis(&LOCAL_GENESIS_REQUEST);
 
     let id: Option<u64> = None;
     let transfer_1_args = runtime_args! {
@@ -219,7 +219,7 @@ The following code snippet is an example function that tests the ability to tran
 // File https://github.com/casper-ecosystem/cep18/blob/dev/tests/src/utility/installer_request_builders.rs
 
 pub(crate) fn test_cep18_transfer(
-    builder: &mut InMemoryWasmTestBuilder,
+    builder: &mut LmdbWasmTestBuilder,
     test_context: &TestContext,
     sender1: Key,
     recipient1: Key,

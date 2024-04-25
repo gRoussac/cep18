@@ -22,7 +22,7 @@ pub fn name() -> EntryPoint {
         Vec::new(),
         String::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -33,7 +33,7 @@ pub fn symbol() -> EntryPoint {
         Vec::new(),
         String::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -48,7 +48,7 @@ pub fn transfer_from() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -62,7 +62,7 @@ pub fn allowance() -> EntryPoint {
         ],
         U256::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -76,7 +76,7 @@ pub fn approve() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -90,7 +90,7 @@ pub fn increase_allowance() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -104,7 +104,7 @@ pub fn decrease_allowance() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -118,7 +118,7 @@ pub fn transfer() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -129,7 +129,7 @@ pub fn balance_of() -> EntryPoint {
         vec![Parameter::new(ADDRESS, Key::cl_type())],
         U256::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -140,7 +140,7 @@ pub fn total_supply() -> EntryPoint {
         Vec::new(),
         U256::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -151,7 +151,7 @@ pub fn decimals() -> EntryPoint {
         Vec::new(),
         u8::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -165,7 +165,7 @@ pub fn burn() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -179,7 +179,7 @@ pub fn mint() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -199,7 +199,7 @@ pub fn change_security() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 
@@ -210,7 +210,7 @@ pub fn init() -> EntryPoint {
         Vec::new(),
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     )
 }
 

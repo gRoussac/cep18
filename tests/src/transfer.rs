@@ -1,5 +1,8 @@
 use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
-use casper_types::{runtime_args, ApiError, Key, RuntimeArgs, U256};
+use casper_types::{
+    addressable_entity::EntityKindTag, runtime_args, AddressableEntityHash, ApiError, EntityAddr,
+    Key, U256,
+};
 
 use crate::utility::{
     constants::{
@@ -14,14 +17,13 @@ use crate::utility::{
     },
 };
 
-use casper_execution_engine::core::{
-    engine_state::Error as CoreError, execution::Error as ExecError,
-};
+use casper_execution_engine::{engine_state::Error as CoreError, execution::ExecError};
 
 #[test]
 fn should_transfer_full_owned_amount() {
     let (mut builder, TestContext { cep18_token, .. }) = setup();
 
+    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
     let initial_supply = U256::from(TOKEN_TOTAL_SUPPLY);
     let transfer_amount_1 = initial_supply;
 
@@ -44,7 +46,7 @@ fn should_transfer_full_owned_amount() {
 
     let token_transfer_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         transfer_1_sender,
-        cep18_token,
+        addressable_cep18_token,
         METHOD_TRANSFER,
         cep18_transfer_1_args,
     )
@@ -66,13 +68,18 @@ fn should_transfer_full_owned_amount() {
     );
     assert_eq!(owner_balance_after, U256::zero());
 
-    let total_supply: U256 = builder.get_value(cep18_token, TOTAL_SUPPLY_KEY);
+    let total_supply: U256 = builder.get_value(
+        EntityAddr::new_smart_contract(cep18_token.value()),
+        TOTAL_SUPPLY_KEY,
+    );
     assert_eq!(total_supply, initial_supply);
 }
 
 #[test]
 fn should_not_transfer_more_than_owned_balance() {
     let (mut builder, TestContext { cep18_token, .. }) = setup();
+
+    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
 
     let initial_supply = U256::from(TOKEN_TOTAL_SUPPLY);
     let transfer_amount = initial_supply + U256::one();
@@ -99,7 +106,7 @@ fn should_not_transfer_more_than_owned_balance() {
 
     let token_transfer_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         transfer_1_sender,
-        cep18_token,
+        addressable_cep18_token,
         METHOD_TRANSFER,
         cep18_transfer_1_args,
     )
@@ -125,13 +132,18 @@ fn should_not_transfer_more_than_owned_balance() {
         cep18_check_balance_of(&mut builder, &cep18_token, Key::Account(transfer_1_sender));
     assert_eq!(owner_balance_after, initial_supply);
 
-    let total_supply: U256 = builder.get_value(cep18_token, TOTAL_SUPPLY_KEY);
+    let total_supply: U256 = builder.get_value(
+        EntityAddr::new_smart_contract(cep18_token.value()),
+        TOTAL_SUPPLY_KEY,
+    );
     assert_eq!(total_supply, initial_supply);
 }
 
 #[test]
 fn should_transfer_from_from_account_to_account() {
     let (mut builder, TestContext { cep18_token, .. }) = setup();
+
+    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
 
     let initial_supply = U256::from(TOKEN_TOTAL_SUPPLY);
     let allowance_amount_1 = U256::from(ALLOWANCE_AMOUNT_1);
@@ -157,7 +169,7 @@ fn should_transfer_from_from_account_to_account() {
 
     let approve_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         owner,
-        cep18_token,
+        addressable_cep18_token,
         METHOD_APPROVE,
         cep18_approve_args,
     )
@@ -165,7 +177,7 @@ fn should_transfer_from_from_account_to_account() {
 
     let transfer_from_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         spender,
-        cep18_token,
+        addressable_cep18_token,
         METHOD_TRANSFER_FROM,
         cep18_transfer_from_args,
     )
@@ -212,6 +224,8 @@ fn should_transfer_from_account_by_contract() {
         },
     ) = setup();
 
+    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+
     let initial_supply = U256::from(TOKEN_TOTAL_SUPPLY);
     let allowance_amount_1 = U256::from(ALLOWANCE_AMOUNT_1);
     let transfer_from_amount_1 = allowance_amount_1;
@@ -227,7 +241,7 @@ fn should_transfer_from_account_by_contract() {
         ARG_AMOUNT => allowance_amount_1,
     };
     let cep18_transfer_from_args = runtime_args! {
-        ARG_TOKEN_CONTRACT => Key::from(cep18_token),
+        ARG_TOKEN_CONTRACT => Key::addressable_entity_key(EntityKindTag::SmartContract, cep18_token),
         ARG_OWNER => Key::Account(owner),
         ARG_RECIPIENT => recipient,
         ARG_AMOUNT => transfer_from_amount_1,
@@ -239,7 +253,7 @@ fn should_transfer_from_account_by_contract() {
 
     let approve_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         owner,
-        cep18_token,
+        addressable_cep18_token,
         METHOD_APPROVE,
         cep18_approve_args,
     )
@@ -315,6 +329,8 @@ fn should_not_be_able_to_own_transfer() {
 fn should_not_be_able_to_own_transfer_from() {
     let (mut builder, TestContext { cep18_token, .. }) = setup();
 
+    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+
     let owner = Key::Account(*DEFAULT_ACCOUNT_ADDR);
     let spender = Key::Account(*DEFAULT_ACCOUNT_ADDR);
     let sender = Key::Account(*DEFAULT_ACCOUNT_ADDR);
@@ -348,7 +364,7 @@ fn should_not_be_able_to_own_transfer_from() {
         };
         ExecuteRequestBuilder::contract_call_by_hash(
             sender.into_account().unwrap(),
-            cep18_token,
+            addressable_cep18_token,
             METHOD_TRANSFER_FROM,
             cep18_transfer_from_args,
         )
@@ -396,6 +412,8 @@ fn should_verify_zero_amount_transfer_is_noop() {
 fn should_verify_zero_amount_transfer_from_is_noop() {
     let (mut builder, TestContext { cep18_token, .. }) = setup();
 
+    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+
     let owner = Key::Account(*DEFAULT_ACCOUNT_ADDR);
     let spender = Key::Account(*ACCOUNT_1_ADDR);
     let recipient = Key::Account(*ACCOUNT_2_ADDR);
@@ -421,7 +439,7 @@ fn should_verify_zero_amount_transfer_from_is_noop() {
         };
         ExecuteRequestBuilder::contract_call_by_hash(
             owner.into_account().unwrap(),
-            cep18_token,
+            addressable_cep18_token,
             METHOD_TRANSFER_FROM,
             cep18_transfer_from_args,
         )

@@ -26,27 +26,31 @@ use entry_points::generate_entry_points;
 
 use casper_contract::{
     contract_api::{
-        runtime::{self, get_caller, get_key, get_named_arg, put_key, revert},
+        runtime::{self, get_call_stack, get_caller, get_key, get_named_arg, put_key, revert},
         storage::{self, dictionary_put},
     },
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    bytesrepr::ToBytes, contracts::NamedKeys, runtime_args, CLValue, ContractHash,
-    ContractPackageHash, Key, RuntimeArgs, U256,
+    addressable_entity::{EntityKindTag, NamedKeys},
+    bytesrepr::ToBytes,
+    contract_messages::MessageTopicOperation,
+    contracts::{ContractHash, ContractPackageHash},
+    runtime_args, CLValue, Key, PackageHash, U256,
 };
 
 use constants::{
     ACCESS_KEY_NAME_PREFIX, ADDRESS, ADMIN_LIST, ALLOWANCES, AMOUNT, BALANCES,
-    CONTRACT_NAME_PREFIX, CONTRACT_VERSION_PREFIX, DECIMALS, ENABLE_MINT_BURN, EVENTS_MODE,
+    CONTRACT_NAME_PREFIX, CONTRACT_VERSION_PREFIX, DECIMALS, ENABLE_MINT_BURN, EVENTS, EVENTS_MODE,
     HASH_KEY_NAME_PREFIX, INIT_ENTRY_POINT_NAME, MINTER_LIST, NAME, NONE_LIST, OWNER, PACKAGE_HASH,
     RECIPIENT, SECURITY_BADGES, SPENDER, SYMBOL, TOTAL_SUPPLY,
 };
 pub use error::Cep18Error;
 use events::{
-    init_events, Burn, ChangeSecurity, DecreaseAllowance, Event, IncreaseAllowance, Mint,
-    SetAllowance, Transfer, TransferFrom,
+    Burn, ChangeSecurity, DecreaseAllowance, Event, IncreaseAllowance, Mint, SetAllowance,
+    Transfer, TransferFrom,
 };
+use modalities::EventsMode;
 use utils::{
     get_immediate_caller_address, get_total_supply_uref, read_from, read_total_supply_from,
     sec_check, write_total_supply_to, SecurityBadge,
@@ -289,7 +293,7 @@ pub extern "C" fn init() {
     let minter_list: Option<Vec<Key>> =
         utils::get_optional_named_arg_with_user_errors(MINTER_LIST, Cep18Error::InvalidMinterList);
 
-    init_events();
+    // init_events();
 
     if let Some(minter_list) = minter_list {
         for minter in minter_list {
@@ -363,26 +367,56 @@ pub extern "C" fn change_security() {
 pub fn upgrade(name: &str) {
     let entry_points = generate_entry_points();
 
-    let contract_package_hash = runtime::get_key(&format!("{HASH_KEY_NAME_PREFIX}{name}"))
+    let old_contract_package_hash = runtime::get_key(&format!("{HASH_KEY_NAME_PREFIX}{name}"))
         .unwrap_or_revert()
-        .into_hash()
-        .map(ContractPackageHash::new)
+        .into_entity_hash()
         .unwrap_or_revert_with(Cep18Error::MissingPackageHashForUpgrade);
+    let contract_package_hash = PackageHash::new(old_contract_package_hash.value());
 
     let previous_contract_hash = runtime::get_key(&format!("{CONTRACT_NAME_PREFIX}{name}"))
         .unwrap_or_revert()
-        .into_hash()
-        .map(ContractHash::new)
-        .unwrap_or_revert_with(Cep18Error::MissingPackageHashForUpgrade);
+        .into_entity_hash()
+        .unwrap_or_revert_with(Cep18Error::MissingContractHashForUpgrade);
 
-    let (contract_hash, contract_version) =
-        storage::add_contract_version(contract_package_hash, entry_points, NamedKeys::new());
+    let events_mode: EventsMode = EventsMode::try_from(
+        utils::get_optional_named_arg_with_user_errors(EVENTS_MODE, Cep18Error::InvalidEventsMode)
+            .unwrap_or(0u8),
+    )
+    .unwrap_or(EventsMode::NoEvents);
+
+    // If event mode is native append the Add operation to the contract
+    let mut message_topics = BTreeMap::new();
+    if EventsMode::Native != events_mode {
+        message_topics.insert(EVENTS.to_string(), MessageTopicOperation::Add);
+    };
+
+    let mut named_keys = NamedKeys::new();
+    named_keys.insert(
+        EVENTS_MODE.to_string(),
+        storage::new_uref(events_mode as u8).into(),
+    );
+
+    let (contract_hash, contract_version) = storage::add_contract_version(
+        contract_package_hash,
+        entry_points,
+        named_keys,
+        message_topics,
+    );
 
     storage::disable_contract_version(contract_package_hash, previous_contract_hash)
         .unwrap_or_revert();
+
+    // migrate old ContractPackageHash as PackageHash so it's stored in a uniform format with the
+    // new `new_contract` implementation
+    runtime::put_key(
+        &format!("{HASH_KEY_NAME_PREFIX}{name}"),
+        contract_package_hash.into(),
+    );
+
+    // ContractHash in previous versions, now AddressableEntityHash
     runtime::put_key(
         &format!("{CONTRACT_NAME_PREFIX}{name}"),
-        contract_hash.into(),
+        Key::addressable_entity_key(EntityKindTag::SmartContract, contract_hash),
     );
     runtime::put_key(
         &format!("{CONTRACT_VERSION_PREFIX}{name}"),
@@ -427,20 +461,28 @@ pub fn install_contract(name: &str) {
     );
     let entry_points = generate_entry_points();
 
-    let hash_key_name = format!("{HASH_KEY_NAME_PREFIX}{name}");
+    let message_topics = if events_mode == 2 {
+        let mut message_topics = BTreeMap::new();
+        message_topics.insert(EVENTS.to_string(), MessageTopicOperation::Add);
+        Some(message_topics)
+    } else {
+        None
+    };
 
+    let hash_key_name = format!("{HASH_KEY_NAME_PREFIX}{name}");
     let (contract_hash, contract_version) = storage::new_contract(
         entry_points,
         Some(named_keys),
         Some(hash_key_name.clone()),
         Some(format!("{ACCESS_KEY_NAME_PREFIX}{name}")),
+        message_topics,
     );
     let package_hash = runtime::get_key(&hash_key_name).unwrap_or_revert();
 
     // Store contract_hash and contract_version under the keys CONTRACT_NAME and CONTRACT_VERSION
     runtime::put_key(
         &format!("{CONTRACT_NAME_PREFIX}{name}"),
-        contract_hash.into(),
+        Key::addressable_entity_key(EntityKindTag::SmartContract, contract_hash),
     );
     runtime::put_key(
         &format!("{CONTRACT_VERSION_PREFIX}{name}"),

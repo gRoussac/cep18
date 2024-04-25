@@ -15,7 +15,7 @@ use casper_contract::{
 };
 
 use casper_types::{
-    bytesrepr::ToBytes, runtime_args, CLTyped, ContractHash, EntryPoint, EntryPointAccess,
+    bytesrepr::ToBytes, runtime_args, AddressableEntityHash, CLTyped, EntryPoint, EntryPointAccess,
     EntryPointType, EntryPoints, Key, Parameter, RuntimeArgs, U256,
 };
 
@@ -54,11 +54,10 @@ fn store_result<T: CLTyped + ToBytes>(result: T) {
 
 #[no_mangle]
 extern "C" fn check_total_supply() {
-    let token_contract: ContractHash = ContractHash::new(
+    let token_contract: AddressableEntityHash =
         runtime::get_named_arg::<Key>(TOKEN_CONTRACT_RUNTIME_ARG_NAME)
-            .into_hash()
-            .unwrap_or_revert(),
-    );
+            .into_entity_hash()
+            .unwrap_or_revert();
     let total_supply: U256 = runtime::call_contract(
         token_contract,
         TOTAL_SUPPLY_ENTRY_POINT_NAME,
@@ -69,11 +68,10 @@ extern "C" fn check_total_supply() {
 
 #[no_mangle]
 extern "C" fn check_balance_of() {
-    let token_contract: ContractHash = ContractHash::new(
+    let token_contract: AddressableEntityHash =
         runtime::get_named_arg::<Key>(TOKEN_CONTRACT_RUNTIME_ARG_NAME)
-            .into_hash()
-            .unwrap_or_revert(),
-    );
+            .into_entity_hash()
+            .unwrap_or_revert();
     let address: Key = runtime::get_named_arg(ADDRESS_RUNTIME_ARG_NAME);
 
     let balance_args = runtime_args! {
@@ -87,11 +85,10 @@ extern "C" fn check_balance_of() {
 
 #[no_mangle]
 extern "C" fn check_allowance_of() {
-    let token_contract: ContractHash = ContractHash::new(
+    let token_contract: AddressableEntityHash =
         runtime::get_named_arg::<Key>(TOKEN_CONTRACT_RUNTIME_ARG_NAME)
-            .into_hash()
-            .unwrap_or_revert(),
-    );
+            .into_entity_hash()
+            .unwrap_or_revert();
     let owner: Key = runtime::get_named_arg(OWNER_RUNTIME_ARG_NAME);
     let spender: Key = runtime::get_named_arg(SPENDER_RUNTIME_ARG_NAME);
 
@@ -107,11 +104,10 @@ extern "C" fn check_allowance_of() {
 
 #[no_mangle]
 extern "C" fn transfer_as_stored_contract() {
-    let token_contract: ContractHash = ContractHash::new(
+    let token_contract: AddressableEntityHash =
         runtime::get_named_arg::<Key>(TOKEN_CONTRACT_RUNTIME_ARG_NAME)
-            .into_hash()
-            .unwrap_or_revert(),
-    );
+            .into_entity_hash()
+            .unwrap_or_revert();
     let recipient: Key = runtime::get_named_arg(RECIPIENT_RUNTIME_ARG_NAME);
     let amount: U256 = runtime::get_named_arg(AMOUNT_RUNTIME_ARG_NAME);
 
@@ -125,11 +121,10 @@ extern "C" fn transfer_as_stored_contract() {
 
 #[no_mangle]
 extern "C" fn transfer_from_as_stored_contract() {
-    let token_contract: ContractHash = ContractHash::new(
+    let token_contract: AddressableEntityHash =
         runtime::get_named_arg::<Key>(TOKEN_CONTRACT_RUNTIME_ARG_NAME)
-            .into_hash()
-            .unwrap_or_revert(),
-    );
+            .into_entity_hash()
+            .unwrap_or_revert();
     let owner: Key = runtime::get_named_arg(OWNER_RUNTIME_ARG_NAME);
     let recipient: Key = runtime::get_named_arg(RECIPIENT_RUNTIME_ARG_NAME);
     let amount: U256 = runtime::get_named_arg(AMOUNT_RUNTIME_ARG_NAME);
@@ -149,11 +144,10 @@ extern "C" fn transfer_from_as_stored_contract() {
 
 #[no_mangle]
 extern "C" fn approve_as_stored_contract() {
-    let token_contract: ContractHash = ContractHash::new(
+    let token_contract: AddressableEntityHash =
         runtime::get_named_arg::<Key>(TOKEN_CONTRACT_RUNTIME_ARG_NAME)
-            .into_hash()
-            .unwrap_or_revert(),
-    );
+            .into_entity_hash()
+            .unwrap_or_revert();
     let spender: Key = runtime::get_named_arg(SPENDER_RUNTIME_ARG_NAME);
     let amount: U256 = runtime::get_named_arg(AMOUNT_RUNTIME_ARG_NAME);
 
@@ -172,69 +166,84 @@ pub extern "C" fn call() {
         String::from(CHECK_TOTAL_SUPPLY_ENTRY_POINT_NAME),
         vec![Parameter::new(
             TOKEN_CONTRACT_RUNTIME_ARG_NAME,
-            ContractHash::cl_type(),
+            AddressableEntityHash::cl_type(),
         )],
         <()>::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     );
     let check_balance_of_entrypoint = EntryPoint::new(
         String::from(CHECK_BALANCE_OF_ENTRY_POINT_NAME),
         vec![
-            Parameter::new(TOKEN_CONTRACT_RUNTIME_ARG_NAME, ContractHash::cl_type()),
+            Parameter::new(
+                TOKEN_CONTRACT_RUNTIME_ARG_NAME,
+                AddressableEntityHash::cl_type(),
+            ),
             Parameter::new(ADDRESS_RUNTIME_ARG_NAME, Key::cl_type()),
         ],
         <()>::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     );
     let check_allowance_of_entrypoint = EntryPoint::new(
         String::from(CHECK_ALLOWANCE_OF_ENTRY_POINT_NAME),
         vec![
-            Parameter::new(TOKEN_CONTRACT_RUNTIME_ARG_NAME, ContractHash::cl_type()),
+            Parameter::new(
+                TOKEN_CONTRACT_RUNTIME_ARG_NAME,
+                AddressableEntityHash::cl_type(),
+            ),
             Parameter::new(OWNER_RUNTIME_ARG_NAME, Key::cl_type()),
             Parameter::new(SPENDER_RUNTIME_ARG_NAME, Key::cl_type()),
         ],
         <()>::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     );
 
     let transfer_as_stored_contract_entrypoint = EntryPoint::new(
         String::from(TRANSFER_AS_STORED_CONTRACT_ENTRY_POINT_NAME),
         vec![
-            Parameter::new(TOKEN_CONTRACT_RUNTIME_ARG_NAME, ContractHash::cl_type()),
+            Parameter::new(
+                TOKEN_CONTRACT_RUNTIME_ARG_NAME,
+                AddressableEntityHash::cl_type(),
+            ),
             Parameter::new(RECIPIENT_RUNTIME_ARG_NAME, Key::cl_type()),
             Parameter::new(AMOUNT_RUNTIME_ARG_NAME, U256::cl_type()),
         ],
         <()>::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     );
 
     let approve_as_stored_contract_entrypoint = EntryPoint::new(
         String::from(APPROVE_AS_STORED_CONTRACT_ENTRY_POINT_NAME),
         vec![
-            Parameter::new(TOKEN_CONTRACT_RUNTIME_ARG_NAME, ContractHash::cl_type()),
+            Parameter::new(
+                TOKEN_CONTRACT_RUNTIME_ARG_NAME,
+                AddressableEntityHash::cl_type(),
+            ),
             Parameter::new(SPENDER_RUNTIME_ARG_NAME, Key::cl_type()),
             Parameter::new(AMOUNT_RUNTIME_ARG_NAME, U256::cl_type()),
         ],
         <()>::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     );
 
     let transfer_from_as_stored_contract_entrypoint = EntryPoint::new(
         String::from(TRANSFER_FROM_AS_STORED_CONTRACT_ENTRY_POINT_NAME),
         vec![
-            Parameter::new(TOKEN_CONTRACT_RUNTIME_ARG_NAME, ContractHash::cl_type()),
+            Parameter::new(
+                TOKEN_CONTRACT_RUNTIME_ARG_NAME,
+                AddressableEntityHash::cl_type(),
+            ),
             Parameter::new(OWNER_RUNTIME_ARG_NAME, Key::cl_type()),
             Parameter::new(RECIPIENT_RUNTIME_ARG_NAME, Key::cl_type()),
             Parameter::new(AMOUNT_RUNTIME_ARG_NAME, U256::cl_type()),
         ],
         <()>::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
     );
 
     entry_points.add_entry_point(check_total_supply_entrypoint);
@@ -248,6 +257,7 @@ pub extern "C" fn call() {
         entry_points,
         None,
         Some(CEP18_TEST_CALL_KEY.to_string()),
+        None,
         None,
     );
 }

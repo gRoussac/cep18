@@ -12,6 +12,7 @@ pub const BALANCES: &str = "balances";
 pub const ALLOWANCES: &str = "allowances";
 /// Name of named-key for `total_supply`
 pub const TOTAL_SUPPLY: &str = "total_supply";
+pub const EVENTS: &str = "events";
 
 pub const HASH_KEY_NAME_PREFIX: &str = "cep18_contract_package_";
 pub const ACCESS_KEY_NAME_PREFIX: &str = "cep18_contract_package_access_";

@@ -14,7 +14,7 @@ use casper_contract::{
 use casper_types::{
     api_error,
     bytesrepr::{self, FromBytes, ToBytes},
-    system::CallStackElement,
+    system::Caller,
     ApiError, CLTyped, Key, URef, U256,
 };
 
@@ -45,18 +45,10 @@ where
 ///
 /// For `Session` and `StoredSession` variants it will return account hash, and for `StoredContract`
 /// case it will use contract package hash as the address.
-fn call_stack_element_to_address(call_stack_element: CallStackElement) -> Key {
+fn call_stack_element_to_address(call_stack_element: Caller) -> Key {
     match call_stack_element {
-        CallStackElement::Session { account_hash } => Key::from(account_hash),
-        CallStackElement::StoredSession { account_hash, .. } => {
-            // Stored session code acts in account's context, so if stored session wants to interact
-            // with an CEP-18 token caller's address will be used.
-            Key::from(account_hash)
-        }
-        CallStackElement::StoredContract {
-            contract_package_hash,
-            ..
-        } => Key::from(contract_package_hash),
+        Caller::Initiator { account_hash } => Key::from(account_hash),
+        Caller::Entity { package_hash, .. } => Key::from(package_hash),
     }
 }
 

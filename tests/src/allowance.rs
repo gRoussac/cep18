@@ -1,5 +1,5 @@
 use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
-use casper_types::{runtime_args, ApiError, Key, RuntimeArgs, U256};
+use casper_types::{addressable_entity::EntityKindTag, runtime_args, AddressableEntityHash, ApiError, Key, U256};
 
 use crate::utility::{
     constants::{
@@ -11,9 +11,7 @@ use crate::utility::{
         cep18_check_allowance_of, make_cep18_approve_request, setup, test_approve_for, TestContext,
     },
 };
-use casper_execution_engine::core::{
-    engine_state::Error as CoreError, execution::Error as ExecError,
-};
+use casper_execution_engine::{engine_state::Error as CoreError, execution::ExecError};
 
 #[test]
 fn should_approve_funds_contract_to_account() {
@@ -26,8 +24,8 @@ fn should_approve_funds_contract_to_account() {
     test_approve_for(
         &mut builder,
         &test_context,
-        Key::Hash(cep18_test_contract_package.value()),
-        Key::Hash(cep18_test_contract_package.value()),
+        Key::addressable_entity_key(EntityKindTag::SmartContract, AddressableEntityHash::new(cep18_test_contract_package.value())),
+        Key::addressable_entity_key(EntityKindTag::SmartContract, AddressableEntityHash::new(cep18_test_contract_package.value())),
         Key::Account(*DEFAULT_ACCOUNT_ADDR),
     );
 }
@@ -78,6 +76,8 @@ fn should_approve_funds_account_to_contract() {
 fn should_not_transfer_from_without_enough_allowance() {
     let (mut builder, TestContext { cep18_token, .. }) = setup();
 
+    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+
     let allowance_amount_1 = U256::from(ALLOWANCE_AMOUNT_1);
     let transfer_from_amount_1 = allowance_amount_1 + U256::one();
 
@@ -102,7 +102,7 @@ fn should_not_transfer_from_without_enough_allowance() {
 
     let approve_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         sender,
-        cep18_token,
+        addressable_cep18_token,
         METHOD_APPROVE,
         cep18_approve_args,
     )
@@ -110,7 +110,7 @@ fn should_not_transfer_from_without_enough_allowance() {
 
     let transfer_from_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         sender,
-        cep18_token,
+        addressable_cep18_token,
         METHOD_TRANSFER_FROM,
         cep18_transfer_from_args,
     )
@@ -135,6 +135,9 @@ fn should_not_transfer_from_without_enough_allowance() {
 #[test]
 fn test_decrease_allowance() {
     let (mut builder, TestContext { cep18_token, .. }) = setup();
+
+    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+
     let sender = Key::Account(*DEFAULT_ACCOUNT_ADDR);
     let owner = Key::Account(*DEFAULT_ACCOUNT_ADDR);
     let spender = Key::Hash([42; 32]);
@@ -148,7 +151,7 @@ fn test_decrease_allowance() {
         make_cep18_approve_request(sender, &cep18_token, spender, allowance_amount_1);
     let decrease_allowance_request = ExecuteRequestBuilder::contract_call_by_hash(
         sender.into_account().unwrap(),
-        cep18_token,
+        addressable_cep18_token,
         DECREASE_ALLOWANCE,
         runtime_args! {
             ARG_SPENDER => spender,
@@ -158,7 +161,7 @@ fn test_decrease_allowance() {
     .build();
     let increase_allowance_request = ExecuteRequestBuilder::contract_call_by_hash(
         sender.into_account().unwrap(),
-        cep18_token,
+        addressable_cep18_token,
         INCREASE_ALLOWANCE,
         runtime_args! {
             ARG_SPENDER => spender,

@@ -1,5 +1,5 @@
 use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
-use casper_types::{runtime_args, Key, RuntimeArgs, U256};
+use casper_types::{runtime_args, Key, U256};
 
 use crate::utility::{
     constants::{
