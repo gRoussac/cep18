@@ -1,5 +1,5 @@
 use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
-use casper_types::{addressable_entity::EntityKindTag, runtime_args, AddressableEntityHash, ApiError, Key, U256};
+use casper_types::{runtime_args, AddressableEntityHash, ApiError, Key, U256};
 
 use crate::utility::{
     constants::{
@@ -24,8 +24,8 @@ fn should_approve_funds_contract_to_account() {
     test_approve_for(
         &mut builder,
         &test_context,
-        Key::addressable_entity_key(EntityKindTag::SmartContract, AddressableEntityHash::new(cep18_test_contract_package.value())),
-        Key::addressable_entity_key(EntityKindTag::SmartContract, AddressableEntityHash::new(cep18_test_contract_package.value())),
+        Key::Hash(cep18_test_contract_package.value()),
+        Key::Hash(cep18_test_contract_package.value()),
         Key::Account(*DEFAULT_ACCOUNT_ADDR),
     );
 }

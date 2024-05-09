@@ -60,6 +60,7 @@ pub const AMOUNT: &str = "amount";
 /// Name of `recipient` runtime argument.
 pub const RECIPIENT: &str = "recipient";
 pub const PACKAGE_HASH: &str = "package_hash";
+pub const CONTRACT_HASH: &str = "contract_hash";
 pub const EVENTS_MODE: &str = "events_mode";
 pub const SECURITY_BADGES: &str = "security_badges";
 pub const ADMIN_LIST: &str = "admin_list";

@@ -47,8 +47,8 @@ where
 /// case it will use contract package hash as the address.
 fn call_stack_element_to_address(call_stack_element: Caller) -> Key {
     match call_stack_element {
-        Caller::Initiator { account_hash } => Key::from(account_hash),
-        Caller::Entity { package_hash, .. } => Key::from(package_hash),
+        Caller::Initiator { account_hash } => Key::Account(account_hash),
+        Caller::Entity { package_hash, .. } => Key::Hash(package_hash.value()),
     }
 }
 

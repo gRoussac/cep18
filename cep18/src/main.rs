@@ -26,7 +26,7 @@ use entry_points::generate_entry_points;
 
 use casper_contract::{
     contract_api::{
-        runtime::{self, get_call_stack, get_caller, get_key, get_named_arg, put_key, revert},
+        runtime::{self, get_caller, get_key, get_named_arg, put_key, revert},
         storage::{self, dictionary_put},
     },
     unwrap_or_revert::UnwrapOrRevert,
@@ -35,12 +35,11 @@ use casper_types::{
     addressable_entity::{EntityKindTag, NamedKeys},
     bytesrepr::ToBytes,
     contract_messages::MessageTopicOperation,
-    contracts::{ContractHash, ContractPackageHash},
-    runtime_args, CLValue, Key, PackageHash, U256,
+    runtime_args, CLValue, Key, U256,
 };
 
 use constants::{
-    ACCESS_KEY_NAME_PREFIX, ADDRESS, ADMIN_LIST, ALLOWANCES, AMOUNT, BALANCES,
+    ACCESS_KEY_NAME_PREFIX, ADDRESS, ADMIN_LIST, ALLOWANCES, AMOUNT, BALANCES, CONTRACT_HASH,
     CONTRACT_NAME_PREFIX, CONTRACT_VERSION_PREFIX, DECIMALS, ENABLE_MINT_BURN, EVENTS, EVENTS_MODE,
     HASH_KEY_NAME_PREFIX, INIT_ENTRY_POINT_NAME, MINTER_LIST, NAME, NONE_LIST, OWNER, PACKAGE_HASH,
     RECIPIENT, SECURITY_BADGES, SPENDER, SYMBOL, TOTAL_SUPPLY,
@@ -275,6 +274,8 @@ pub extern "C" fn init() {
     }
     let package_hash = get_named_arg::<Key>(PACKAGE_HASH);
     put_key(PACKAGE_HASH, package_hash);
+    let contract_hash = get_named_arg::<Key>(CONTRACT_HASH);
+    put_key(CONTRACT_HASH, contract_hash);
     storage::new_dictionary(ALLOWANCES).unwrap_or_revert();
     let balances_uref = storage::new_dictionary(BALANCES).unwrap_or_revert();
     let initial_supply = runtime::get_named_arg(TOTAL_SUPPLY);
@@ -364,14 +365,14 @@ pub extern "C" fn change_security() {
         sec_change_map: badge_map,
     }));
 }
+
 pub fn upgrade(name: &str) {
     let entry_points = generate_entry_points();
 
-    let old_contract_package_hash = runtime::get_key(&format!("{HASH_KEY_NAME_PREFIX}{name}"))
+    let contract_package_hash = runtime::get_key(&format!("{HASH_KEY_NAME_PREFIX}{name}"))
         .unwrap_or_revert()
-        .into_entity_hash()
+        .into_package_hash()
         .unwrap_or_revert_with(Cep18Error::MissingPackageHashForUpgrade);
-    let contract_package_hash = PackageHash::new(old_contract_package_hash.value());
 
     let previous_contract_hash = runtime::get_key(&format!("{CONTRACT_NAME_PREFIX}{name}"))
         .unwrap_or_revert()
@@ -489,7 +490,7 @@ pub fn install_contract(name: &str) {
         storage::new_uref(contract_version).into(),
     );
     // Call contract to initialize it
-    let mut init_args = runtime_args! {TOTAL_SUPPLY => total_supply, PACKAGE_HASH => package_hash};
+    let mut init_args = runtime_args! {TOTAL_SUPPLY => total_supply, PACKAGE_HASH => package_hash, CONTRACT_HASH => Key::addressable_entity_key(EntityKindTag::SmartContract, contract_hash)};
 
     if let Some(admin_list) = admin_list {
         init_args.insert(ADMIN_LIST, admin_list).unwrap_or_revert();

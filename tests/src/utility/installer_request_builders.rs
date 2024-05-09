@@ -3,14 +3,13 @@ use casper_engine_test_support::{
     DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
 use casper_types::{
-    account::AccountHash, addressable_entity::EntityKindTag, bytesrepr::FromBytes,
-    runtime_args, AddressableEntityHash, CLTyped, EntityAddr,
-    GenesisAccount, Key, Motes, PackageHash, RuntimeArgs, U256, U512,
+    account::AccountHash, addressable_entity::EntityKindTag, bytesrepr::FromBytes, runtime_args,
+    AddressableEntityHash, CLTyped, EntityAddr, GenesisAccount, Key, Motes, PackageHash,
+    RuntimeArgs, U256, U512,
 };
 
 use crate::utility::constants::{
-    ALLOWANCE_AMOUNT_1, ALLOWANCE_AMOUNT_2, TOTAL_SUPPLY_KEY,
-    TRANSFER_AMOUNT_1, TRANSFER_AMOUNT_2,
+    ALLOWANCE_AMOUNT_1, ALLOWANCE_AMOUNT_2, TOTAL_SUPPLY_KEY, TRANSFER_AMOUNT_1, TRANSFER_AMOUNT_2,
 };
 
 use super::constants::{
@@ -84,8 +83,9 @@ pub(crate) fn setup_with_args(install_args: RuntimeArgs) -> (LmdbWasmTestBuilder
     builder.exec(install_request_1).expect_success().commit();
     builder.exec(install_request_2).expect_success().commit();
 
-    let account =
-        builder.get_entity_with_named_keys_by_account_hash(*DEFAULT_ACCOUNT_ADDR).unwrap();
+    let account = builder
+        .get_entity_with_named_keys_by_account_hash(*DEFAULT_ACCOUNT_ADDR)
+        .unwrap();
     let account_named_keys = account.named_keys();
     // println!("{account_named_keys:?}");
 
