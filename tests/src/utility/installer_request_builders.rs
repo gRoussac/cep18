@@ -149,15 +149,9 @@ pub(crate) fn get_test_result<T: FromBytes + CLTyped>(
         .get_package(cep18_test_contract_package)
         .expect("should have contract package");
     let enabled_versions = contract_package.enabled_versions();
-<<<<<<< HEAD
     let contract_hash = enabled_versions
         .contract_hashes()
         .last()
-=======
-    let (_version, contract_hash) = enabled_versions
-        .iter()
-        .next_back()
->>>>>>> d6348eb (Disable integer sign extensions (#139))
         .expect("should have latest version");
     let entity_addr = EntityAddr::new_smart_contract(contract_hash.value());
     builder.get_value(entity_addr, RESULT_KEY)
