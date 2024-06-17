@@ -29,7 +29,7 @@ fn should_have_queryable_properties() {
     let total_supply: U256 = builder.get_value(cep18_entity_addr, TOTAL_SUPPLY_KEY);
     assert_eq!(total_supply, U256::from(TOKEN_TOTAL_SUPPLY));
 
-    let owner_key = Key::Account(*DEFAULT_ACCOUNT_ADDR);
+    let owner_key = Key::AddressableEntity(EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()));
 
     let owner_balance = cep18_check_balance_of(&mut builder, &cep18_token, owner_key);
     assert_eq!(owner_balance, total_supply);

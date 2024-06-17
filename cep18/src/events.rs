@@ -1,6 +1,6 @@
 use core::convert::TryFrom;
 
-use alloc::{collections::BTreeMap, format};
+use alloc::{collections::BTreeMap, format, string::String, vec::Vec};
 use casper_contract::{contract_api::runtime, unwrap_or_revert::UnwrapOrRevert};
 use casper_types::{Key, U256};
 
@@ -22,7 +22,7 @@ pub fn record_event_dictionary(event: Event) {
         EventsMode::Native => {
             runtime::emit_message(EVENTS, &format!("{event:?}").into()).unwrap_or_revert()
         }
-        EventsMode::NativeNCES =>{
+        EventsMode::NativeNCES => {
             runtime::emit_message(EVENTS, &format!("{event:?}").into()).unwrap_or_revert();
             ces(event);
         }
@@ -39,6 +39,8 @@ pub enum Event {
     Transfer(Transfer),
     TransferFrom(TransferFrom),
     ChangeSecurity(ChangeSecurity),
+    BalanceMigration(BalanceMigration),
+    AllowanceMigration(AllowanceMigration),
 }
 
 #[derive(Event, Debug, PartialEq, Eq)]
@@ -97,6 +99,25 @@ pub struct ChangeSecurity {
     pub sec_change_map: BTreeMap<Key, SecurityBadge>,
 }
 
+/// `success_list` -> Vec<(Key,Key)> where the tuple is the pair of old_key and new_key.
+/// `failure_map` -> BTreeMap<Key, String> where the key is the provided old_key, and the String
+/// value is the failure reason, while the String is the failure reason.
+#[derive(Event, Debug, PartialEq, Eq)]
+pub struct BalanceMigration {
+    pub success_map: Vec<(Key, Key)>,
+    pub failure_map: BTreeMap<Key, String>,
+}
+
+/// `success_list` -> Vec<(Key,Key)> where one tuple is the pair of old_key and new_key for the
+/// spender and another is the same for owner.
+/// `failure_map` -> BTreeMap<(Key,Key), String> where the Key tuples is the pair of old_spender_key
+/// and old_owner_key, while the String is the failure reason.
+#[derive(Event, Debug, PartialEq, Eq)]
+pub struct AllowanceMigration {
+    pub success_map: Vec<((Key, Key), (Key, Key))>,
+    pub failure_map: BTreeMap<(Key, Option<Key>), String>,
+}
+
 fn ces(event: Event) {
     match event {
         Event::Mint(ev) => emit(ev),
@@ -107,6 +128,8 @@ fn ces(event: Event) {
         Event::Transfer(ev) => emit(ev),
         Event::TransferFrom(ev) => emit(ev),
         Event::ChangeSecurity(ev) => emit(ev),
+        Event::BalanceMigration(ev) => emit(ev),
+        Event::AllowanceMigration(ev) => emit(ev),
     }
 }
 
@@ -123,7 +146,9 @@ pub fn init_events() {
             .with::<DecreaseAllowance>()
             .with::<Transfer>()
             .with::<TransferFrom>()
-            .with::<ChangeSecurity>();
+            .with::<ChangeSecurity>()
+            .with::<BalanceMigration>()
+            .with::<AllowanceMigration>();
         casper_event_standard::init(schemas);
     }
 }

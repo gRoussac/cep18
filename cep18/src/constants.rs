@@ -13,6 +13,7 @@ pub const ALLOWANCES: &str = "allowances";
 /// Name of named-key for `total_supply`
 pub const TOTAL_SUPPLY: &str = "total_supply";
 pub const EVENTS: &str = "events";
+pub const REVERT: &str = "revert";
 
 pub const HASH_KEY_NAME_PREFIX: &str = "cep18_contract_package_";
 pub const ACCESS_KEY_NAME_PREFIX: &str = "cep18_contract_package_access_";
@@ -45,6 +46,8 @@ pub const BURN_ENTRY_POINT_NAME: &str = "burn";
 pub const INIT_ENTRY_POINT_NAME: &str = "init";
 /// Name of `change_security` entry point.
 pub const CHANGE_SECURITY_ENTRY_POINT_NAME: &str = "change_security";
+pub const MIGRATE_USER_BALANCE_KEYS_ENTRY_POINT_NAME: &str = "migrate_user_balance_keys";
+pub const MIGRATE_USER_ALLOWANCE_KEYS_ENTRY_POINT_NAME: &str = "migrate_user_allowance_keys";
 
 pub const INCREASE_ALLOWANCE_ENTRY_POINT_NAME: &str = "increase_allowance";
 pub const DECREASE_ALLOWANCE_ENTRY_POINT_NAME: &str = "decrease_allowance";
@@ -69,3 +72,4 @@ pub const BURNER_LIST: &str = "burner_list";
 pub const NONE_LIST: &str = "none_list";
 pub const MINT_AND_BURN_LIST: &str = "mint_and_burn_list";
 pub const ENABLE_MINT_BURN: &str = "enable_mint_burn";
+pub const USER_KEY_MAP: &str = "user_key_map";

@@ -49,6 +49,8 @@ pub enum Cep18Error {
     InvalidBurnTarget = 60018,
     MissingPackageHashForUpgrade = 60019,
     MissingContractHashForUpgrade = 60020,
+    WrongKeyType = 60021,
+    KeyTypeMigrationMismatch = 60022,
 }
 
 impl From<Cep18Error> for ApiError {

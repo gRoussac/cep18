@@ -23,7 +23,7 @@ pub fn name() -> EntryPoint {
         String::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -35,7 +35,7 @@ pub fn symbol() -> EntryPoint {
         String::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -51,7 +51,7 @@ pub fn transfer_from() -> EntryPoint {
         CLType::Unit,
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -66,7 +66,7 @@ pub fn allowance() -> EntryPoint {
         U256::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -81,7 +81,7 @@ pub fn approve() -> EntryPoint {
         CLType::Unit,
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -96,7 +96,7 @@ pub fn increase_allowance() -> EntryPoint {
         CLType::Unit,
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -111,7 +111,7 @@ pub fn decrease_allowance() -> EntryPoint {
         CLType::Unit,
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -126,7 +126,7 @@ pub fn transfer() -> EntryPoint {
         CLType::Unit,
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -138,7 +138,7 @@ pub fn balance_of() -> EntryPoint {
         U256::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -150,7 +150,7 @@ pub fn total_supply() -> EntryPoint {
         U256::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -162,7 +162,7 @@ pub fn decimals() -> EntryPoint {
         u8::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -177,7 +177,7 @@ pub fn burn() -> EntryPoint {
         CLType::Unit,
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -192,7 +192,7 @@ pub fn mint() -> EntryPoint {
         CLType::Unit,
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -213,7 +213,7 @@ pub fn change_security() -> EntryPoint {
         CLType::Unit,
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -225,7 +225,7 @@ pub fn init() -> EntryPoint {
         CLType::Unit,
         EntryPointAccess::Public,
         EntryPointType::Called,
-        casper_types::EntryPointPayment::Caller
+        casper_types::EntryPointPayment::Caller,
     )
 }
 

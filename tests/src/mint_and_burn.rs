@@ -1,5 +1,5 @@
 use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
-use casper_types::{runtime_args, AddressableEntityHash, ApiError, Key, U256};
+use casper_types::{runtime_args, AddressableEntityHash, ApiError, EntityAddr, Key, U256};
 
 use crate::utility::{
     constants::{
@@ -48,7 +48,7 @@ fn test_mint_and_burn_tokens() {
         cep18_check_balance_of(
             &mut builder,
             &cep18_token,
-            Key::Account(*DEFAULT_ACCOUNT_ADDR)
+            Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()))
         ),
         U256::from(TOKEN_TOTAL_SUPPLY),
     );
@@ -96,7 +96,7 @@ fn test_mint_and_burn_tokens() {
         addressable_cep18_token,
         METHOD_BURN,
         runtime_args! {
-            ARG_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
+            ARG_OWNER => Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value())),
             ARG_AMOUNT => mint_amount,
         },
     )
@@ -108,7 +108,7 @@ fn test_mint_and_burn_tokens() {
         cep18_check_balance_of(
             &mut builder,
             &cep18_token,
-            Key::Account(*DEFAULT_ACCOUNT_ADDR)
+            Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()))
         ),
         U256::from(999999999),
     );
@@ -196,7 +196,7 @@ fn test_should_not_burn_above_balance() {
         addressable_cep18_token,
         METHOD_BURN,
         runtime_args! {
-            ARG_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
+            ARG_OWNER => Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value())),
             ARG_AMOUNT => U256::from(TOKEN_TOTAL_SUPPLY)+1,
         },
     )
@@ -284,7 +284,7 @@ fn test_security_no_rights() {
         addressable_cep18_token,
         METHOD_MINT,
         runtime_args! {
-            ARG_OWNER => Key::Account(*ACCOUNT_1_ADDR),
+            ARG_OWNER => Key::AddressableEntity(casper_types::EntityAddr::Account(ACCOUNT_1_ADDR.value())),
             ARG_AMOUNT => mint_amount,
         },
     )
@@ -304,7 +304,7 @@ fn test_security_no_rights() {
         addressable_cep18_token,
         METHOD_MINT,
         runtime_args! {
-            ARG_OWNER => Key::Account(*ACCOUNT_1_ADDR),
+            ARG_OWNER => Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())),
             ARG_AMOUNT => mint_amount,
         },
     )
@@ -320,7 +320,7 @@ fn test_security_no_rights() {
         addressable_cep18_token,
         METHOD_BURN,
         runtime_args! {
-            ARG_OWNER => Key::Account(*ACCOUNT_1_ADDR),
+            ARG_OWNER => Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())),
             ARG_AMOUNT => mint_amount,
         },
     )
@@ -339,7 +339,7 @@ fn test_security_minter_rights() {
         ARG_DECIMALS => TOKEN_DECIMALS,
         ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
         ENABLE_MINT_BURN => true,
-        MINTER_LIST => vec![Key::Account(*ACCOUNT_1_ADDR)]
+        MINTER_LIST => vec![Key::AddressableEntity(casper_types::EntityAddr::Account(ACCOUNT_1_ADDR.value()))]
     });
 
     let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
@@ -396,7 +396,7 @@ fn test_security_burner_rights() {
         addressable_cep18_token,
         METHOD_MINT,
         runtime_args! {
-            ARG_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
+            ARG_OWNER => Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value())),
             ARG_AMOUNT => mint_amount,
         },
     )
@@ -410,7 +410,7 @@ fn test_security_burner_rights() {
         addressable_cep18_token,
         METHOD_BURN,
         runtime_args! {
-            ARG_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
+            ARG_OWNER => Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value())),
             ARG_AMOUNT => mint_amount,
         },
     )
@@ -429,7 +429,7 @@ fn test_change_security() {
         ARG_DECIMALS => TOKEN_DECIMALS,
         ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
         ENABLE_MINT_BURN => true,
-        ADMIN_LIST => vec![Key::Account(*ACCOUNT_1_ADDR)]
+        ADMIN_LIST => vec![Key::AddressableEntity(casper_types::EntityAddr::Account(ACCOUNT_1_ADDR.value()))]
     });
 
     let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
@@ -438,7 +438,7 @@ fn test_change_security() {
         addressable_cep18_token,
         CHANGE_SECURITY,
         runtime_args! {
-            NONE_LIST => vec![Key::Account(*DEFAULT_ACCOUNT_ADDR)],
+            NONE_LIST => vec![Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()))],
         },
     )
     .build();

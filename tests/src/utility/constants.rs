@@ -1,4 +1,4 @@
-use casper_types::{account::AccountHash, Key, PublicKey, SecretKey};
+use casper_types::{account::AccountHash, EntityAddr, Key, PublicKey, SecretKey};
 use once_cell::sync::Lazy;
 
 pub const CEP18_CONTRACT_WASM: &str = "cep18.wasm";
@@ -67,9 +67,9 @@ pub const METHOD_TRANSFER_AS_STORED_CONTRACT: &str = "transfer_as_stored_contrac
 pub const METHOD_APPROVE_AS_STORED_CONTRACT: &str = "approve_as_stored_contract";
 pub const METHOD_FROM_AS_STORED_CONTRACT: &str = "transfer_from_as_stored_contract";
 
-pub const TOKEN_OWNER_ADDRESS_1: Key = Key::Account(AccountHash::new([42; 32]));
+pub const TOKEN_OWNER_ADDRESS_1: Key = Key::AddressableEntity(EntityAddr::Account([42; 32]));
 pub const TOKEN_OWNER_AMOUNT_1: u64 = 1_000_000;
-pub const TOKEN_OWNER_ADDRESS_2: Key = Key::Hash([42; 32]);
+pub const TOKEN_OWNER_ADDRESS_2: Key = Key::AddressableEntity(EntityAddr::SmartContract([42; 32]));
 pub const TOKEN_OWNER_AMOUNT_2: u64 = 2_000_000;
 
 pub const METHOD_MINT: &str = "mint";

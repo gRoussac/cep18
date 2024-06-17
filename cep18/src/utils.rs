@@ -15,8 +15,7 @@ use casper_types::{
     api_error,
     bytesrepr::{self, FromBytes, ToBytes},
     system::Caller,
-    system::Caller,
-    ApiError, CLTyped, Key, URef, U256,
+    ApiError, CLTyped, EntityAddr, Key, URef, U256,
 };
 
 use crate::{
@@ -47,16 +46,20 @@ where
 /// For `Session` and `StoredSession` variants it will return account hash, and for `StoredContract`
 /// case it will use contract package hash as the address.
 fn call_stack_element_to_address(call_stack_element: Caller) -> Key {
-fn call_stack_element_to_address(call_stack_element: Caller) -> Key {
     match call_stack_element {
-        Caller::Initiator { account_hash } => Key::from(account_hash),
-        Caller::Entity { package_hash, .. } => Key::from(package_hash),
+        Caller::Initiator { account_hash } => {
+            Key::AddressableEntity(EntityAddr::Account(account_hash.value()))
+        }
+        Caller::Entity { package_hash, .. } => {
+            Key::AddressableEntity(EntityAddr::SmartContract(package_hash.value()))
+        }
     }
 }
 
 /// Gets the immediate session caller of the current execution.
 ///
-/// This function ensures that Contracts can participate and no middleman (contract) acts for users.
+/// This function ensures that Contracts can participate and no middleman (contract) acts for
+/// users.
 pub(crate) fn get_immediate_caller_address() -> Result<Key, Cep18Error> {
     let call_stack = runtime::get_call_stack();
     call_stack
