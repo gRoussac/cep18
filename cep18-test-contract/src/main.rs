@@ -171,6 +171,7 @@ pub extern "C" fn call() {
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller
     );
     let check_balance_of_entrypoint = EntryPoint::new(
         String::from(CHECK_BALANCE_OF_ENTRY_POINT_NAME),
@@ -184,6 +185,7 @@ pub extern "C" fn call() {
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller
     );
     let check_allowance_of_entrypoint = EntryPoint::new(
         String::from(CHECK_ALLOWANCE_OF_ENTRY_POINT_NAME),
@@ -198,6 +200,7 @@ pub extern "C" fn call() {
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller
     );
 
     let transfer_as_stored_contract_entrypoint = EntryPoint::new(
@@ -213,6 +216,7 @@ pub extern "C" fn call() {
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller
     );
 
     let approve_as_stored_contract_entrypoint = EntryPoint::new(
@@ -228,6 +232,7 @@ pub extern "C" fn call() {
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller
     );
 
     let transfer_from_as_stored_contract_entrypoint = EntryPoint::new(
@@ -244,6 +249,7 @@ pub extern "C" fn call() {
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller
     );
 
     entry_points.add_entry_point(check_total_supply_entrypoint);

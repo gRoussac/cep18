@@ -47,8 +47,7 @@ use constants::{
 };
 pub use error::Cep18Error;
 use events::{
-    Burn, ChangeSecurity, DecreaseAllowance, Event, IncreaseAllowance, Mint, SetAllowance,
-    Transfer, TransferFrom,
+    init_events, Burn, ChangeSecurity, DecreaseAllowance, Event, IncreaseAllowance, Mint, SetAllowance, Transfer, TransferFrom
 };
 use modalities::EventsMode;
 use utils::{
@@ -295,7 +294,12 @@ pub extern "C" fn init() {
     let minter_list: Option<Vec<Key>> =
         utils::get_optional_named_arg_with_user_errors(MINTER_LIST, Cep18Error::InvalidMinterList);
 
-    // init_events();
+    let events_mode: EventsMode =
+        EventsMode::try_from(read_from::<u8>(EVENTS_MODE)).unwrap_or_revert();
+
+    if [EventsMode::CES, EventsMode::NativeNCES].contains(&events_mode){
+        init_events();
+    }
 
     if let Some(minter_list) = minter_list {
         for minter in minter_list {

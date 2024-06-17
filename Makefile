@@ -13,8 +13,8 @@ build-contract:
 
 setup-test: build-contract
 	mkdir -p tests/wasm
-	cp ./cep18/target/wasm32-unknown-unknown/release/cep18.wasm tests/wasm
-	cp ./cep18-test-contract/target/wasm32-unknown-unknown/release/cep18_test_contract.wasm tests/wasm
+	cp ./target/wasm32-unknown-unknown/release/cep18.wasm tests/wasm
+	cp ./target/wasm32-unknown-unknown/release/cep18_test_contract.wasm tests/wasm
 
 test: setup-test
 	cd tests && cargo test

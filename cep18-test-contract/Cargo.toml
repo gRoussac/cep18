@@ -11,9 +11,5 @@ doctest = false
 test = false
 
 [dependencies]
-casper-types = { git = "https://github.com/casper-network/casper-node.git", branch = "release-2.0.0-rc1" }
-casper-contract = { git = "https://github.com/casper-network/casper-node.git", branch = "release-2.0.0-rc1" }
-
-[profile.release]
-codegen-units = 1
-lto = true
+casper-types = { git = "https://github.com/casper-network/casper-node.git", branch = "release-2.0.0-rc2"}
+casper-contract = { git = "https://github.com/casper-network/casper-node.git", branch = "release-2.0.0-rc2"}

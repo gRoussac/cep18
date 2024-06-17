@@ -7,8 +7,9 @@ use crate::Cep18Error;
 #[allow(clippy::upper_case_acronyms)]
 pub enum EventsMode {
     NoEvents = 0,
-    // CES = 1,
+    CES = 1,
     Native = 2,
+    NativeNCES = 3,
 }
 
 impl TryFrom<u8> for EventsMode {
@@ -17,8 +18,9 @@ impl TryFrom<u8> for EventsMode {
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(EventsMode::NoEvents),
-            // 1 => Ok(EventsMode::CES),
+            1 => Ok(EventsMode::CES),
             2 => Ok(EventsMode::Native),
+            3 => Ok(EventsMode::NativeNCES),
             _ => Err(Cep18Error::InvalidEventsMode),
         }
     }
