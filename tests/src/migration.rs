@@ -1,5 +1,5 @@
 use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
-use casper_types::{runtime_args, Key, U256};
+use casper_types::{runtime_args, AddressableEntityHash, Key, U256};
 
 use crate::utility::{
     constants::{
@@ -58,8 +58,12 @@ fn should_upgrade_contract_version() {
 
 #[test]
 fn should_migrate_1_5_6_to_2_0_0_rc2() {
-    let (mut builder, lmdb_fixture_state, _) =
+    let (mut builder, lmdb_fixture_state, _temp_dir) =
         casper_fixtures::builder_from_global_state_fixture("cep18-1.5.6-minted");
+
+    // println!("get_entity_with_named_keys_by_entity_hash: {:?}", builder.get_entity_with_named_keys_by_entity_hash(AddressableEntityHash::new(DEFAULT_ACCOUNT_ADDR.value())));
+    // println!("get_engine_state: {:?}", builder.get_engine_state());
+    // println!("get_genesis_account: {:?}", builder.get_genesis_account());
 
     let get_entity_by_account_hash = builder.get_entity_by_account_hash(*DEFAULT_ACCOUNT_ADDR);
     println!("{get_entity_by_account_hash:?}");

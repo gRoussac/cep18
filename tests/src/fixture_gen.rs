@@ -161,7 +161,7 @@ fn main() {
             validator: None,
         },
     ]);
-    generate_fixture("cep18-2.0.0-rc2-minted", genesis_request, |builder|{
+    generate_fixture("cep18-2.0.0-rc3-minted", genesis_request, |builder|{
         let mint_amount = U256::one();
 
         let install_args = runtime_args! {
