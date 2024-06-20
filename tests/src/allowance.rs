@@ -1,6 +1,7 @@
 use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
 use casper_types::{
-    addressable_entity::EntityKindTag, runtime_args, AddressableEntityHash, ApiError, EntityAddr, Key, U256
+    addressable_entity::EntityKindTag, runtime_args, AddressableEntityHash, ApiError, EntityAddr,
+    Key, U256,
 };
 
 use crate::utility::{
@@ -49,8 +50,12 @@ fn should_approve_funds_contract_to_contract() {
     test_approve_for(
         &mut builder,
         &test_context,
-        Key::AddressableEntity(EntityAddr::SmartContract(cep18_test_contract_package.value())),
-        Key::AddressableEntity(EntityAddr::SmartContract(cep18_test_contract_package.value())),
+        Key::AddressableEntity(EntityAddr::SmartContract(
+            cep18_test_contract_package.value(),
+        )),
+        Key::AddressableEntity(EntityAddr::SmartContract(
+            cep18_test_contract_package.value(),
+        )),
         Key::AddressableEntity(EntityAddr::SmartContract([42; 32])),
     );
 }
@@ -104,8 +109,11 @@ fn should_not_transfer_from_without_enough_allowance() {
         ARG_AMOUNT => transfer_from_amount_1,
     };
 
-    let spender_allowance_before =
-        cep18_check_allowance_of(&mut builder, Key::AddressableEntity(EntityAddr::Account(owner.value())), Key::AddressableEntity(EntityAddr::Account(recipient.value())));
+    let spender_allowance_before = cep18_check_allowance_of(
+        &mut builder,
+        Key::AddressableEntity(EntityAddr::Account(owner.value())),
+        Key::AddressableEntity(EntityAddr::Account(recipient.value())),
+    );
     assert_eq!(spender_allowance_before, U256::zero());
 
     let approve_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
@@ -126,8 +134,11 @@ fn should_not_transfer_from_without_enough_allowance() {
 
     builder.exec(approve_request_1).expect_success().commit();
 
-    let account_1_allowance_after =
-        cep18_check_allowance_of(&mut builder, Key::AddressableEntity(EntityAddr::Account(owner.value())), Key::AddressableEntity(EntityAddr::Account(recipient.value())));
+    let account_1_allowance_after = cep18_check_allowance_of(
+        &mut builder,
+        Key::AddressableEntity(EntityAddr::Account(owner.value())),
+        Key::AddressableEntity(EntityAddr::Account(recipient.value())),
+    );
     assert_eq!(account_1_allowance_after, allowance_amount_1);
 
     builder.exec(transfer_from_request_1).commit();
@@ -151,7 +162,7 @@ fn test_decrease_allowance() {
 
     let owner_key = Key::AddressableEntity(EntityAddr::Account(owner.value()));
     let spender_key = Key::AddressableEntity(EntityAddr::SmartContract([42; 32]));
-    
+
     let allowance_amount_1 = U256::from(ALLOWANCE_AMOUNT_1);
     let allowance_amount_2 = U256::from(ALLOWANCE_AMOUNT_2);
 
@@ -192,7 +203,8 @@ fn test_decrease_allowance() {
         .expect_success()
         .commit();
 
-    let account_1_allowance_after_decrease = cep18_check_allowance_of(&mut builder, owner_key, spender);
+    let account_1_allowance_after_decrease =
+        cep18_check_allowance_of(&mut builder, owner_key, spender);
 
     assert_eq!(
         account_1_allowance_after_decrease,
@@ -204,7 +216,8 @@ fn test_decrease_allowance() {
         .expect_success()
         .commit();
 
-    let account_1_allowance_after_increase = cep18_check_allowance_of(&mut builder, owner_key, spender);
+    let account_1_allowance_after_increase =
+        cep18_check_allowance_of(&mut builder, owner_key, spender);
 
     assert_eq!(
         account_1_allowance_after_increase,

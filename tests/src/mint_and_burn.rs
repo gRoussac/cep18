@@ -48,7 +48,9 @@ fn test_mint_and_burn_tokens() {
         cep18_check_balance_of(
             &mut builder,
             &cep18_token,
-            Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()))
+            Key::AddressableEntity(casper_types::EntityAddr::Account(
+                DEFAULT_ACCOUNT_ADDR.value()
+            ))
         ),
         U256::from(TOKEN_TOTAL_SUPPLY),
     );
@@ -108,7 +110,9 @@ fn test_mint_and_burn_tokens() {
         cep18_check_balance_of(
             &mut builder,
             &cep18_token,
-            Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()))
+            Key::AddressableEntity(casper_types::EntityAddr::Account(
+                DEFAULT_ACCOUNT_ADDR.value()
+            ))
         ),
         U256::from(999999999),
     );

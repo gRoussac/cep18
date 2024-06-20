@@ -32,7 +32,10 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    addressable_entity::{EntityKindTag, NamedKeys}, bytesrepr::ToBytes, contract_messages::MessageTopicOperation, runtime_args, AddressableEntityHash, CLValue, EntityAddr, Key, PackageHash, U256
+    addressable_entity::{EntityKindTag, NamedKeys},
+    bytesrepr::ToBytes,
+    contract_messages::MessageTopicOperation,
+    runtime_args, AddressableEntityHash, CLValue, EntityAddr, Key, PackageHash, U256,
 };
 
 use constants::{
@@ -279,12 +282,20 @@ pub extern "C" fn init() {
     let balances_uref = storage::new_dictionary(BALANCES).unwrap_or_revert();
     let initial_supply = runtime::get_named_arg(TOTAL_SUPPLY);
     let caller = get_caller();
-    write_balance_to(balances_uref, Key::AddressableEntity(EntityAddr::Account(caller.value())), initial_supply);
+    write_balance_to(
+        balances_uref,
+        Key::AddressableEntity(EntityAddr::Account(caller.value())),
+        initial_supply,
+    );
 
     let security_badges_dict = storage::new_dictionary(SECURITY_BADGES).unwrap_or_revert();
     dictionary_put(
         security_badges_dict,
-        &base64::encode(Key::AddressableEntity(EntityAddr::Account(caller.value())).to_bytes().unwrap_or_revert()),
+        &base64::encode(
+            Key::AddressableEntity(EntityAddr::Account(caller.value()))
+                .to_bytes()
+                .unwrap_or_revert(),
+        ),
         SecurityBadge::Admin,
     );
 
@@ -373,8 +384,8 @@ pub extern "C" fn change_security() {
 /// Entrypoint to migrate user and contract keys regarding balances provided as argument from 1.x to
 /// 2.x key/hash storage version. Argument is a single BTreeMap<Key, bool>. The key is the already
 /// stored key in the system (previously Key::Hash or Key::Account), while the bool value is the
-/// verification for the key's flag (true for account, false for contract).
-/// Going forward these will be stored are Key::AddressableEntity(EntityAddr::Account)
+/// verification for the key's state of being an account or a contract (true for account, false for
+/// contract). Going forward these will be stored are Key::AddressableEntity(EntityAddr::Account)
 /// and Key::AddressableEntity(EntityAddr::SmartContract) respectively.
 #[no_mangle]
 pub fn migrate_users_balance_keys() {
@@ -385,10 +396,10 @@ pub fn migrate_users_balance_keys() {
 
     let keys: BTreeMap<Key, bool> = get_named_arg(USER_KEY_MAP);
     let balances_uref = get_balances_uref();
-    for (old_key, flag) in keys {
+    for (old_key, is_account_flag) in keys {
         let migrated_key = match old_key {
             Key::Account(account_hash) => {
-                if !flag {
+                if !is_account_flag {
                     if event_on {
                         failure_map.insert(old_key, String::from("FlagMismatch"));
                     } else if revert_on {
@@ -399,7 +410,7 @@ pub fn migrate_users_balance_keys() {
                 Key::AddressableEntity(EntityAddr::Account(account_hash.value()))
             }
             Key::Hash(contract_package) => {
-                if flag {
+                if is_account_flag {
                     if event_on {
                         failure_map.insert(old_key, String::from("FlagMismatch"));
                     } else if revert_on {
@@ -413,7 +424,7 @@ pub fn migrate_users_balance_keys() {
                 if event_on {
                     failure_map.insert(old_key, String::from("WrongKeyType"));
                 } else if revert_on {
-                    revert(Cep18Error::WrongKeyType)
+                    revert(Cep18Error::InvalidKeyType)
                 }
                 continue;
             }
@@ -453,10 +464,10 @@ pub fn migrate_users_allowance_keys() {
 
     let keys: BTreeMap<(Key, bool), Vec<(Key, bool)>> = get_named_arg(USER_KEY_MAP);
     let allowances_uref = get_allowances_uref();
-    for ((spender_key, spender_flag), allowance_owner_keys) in keys {
+    for ((spender_key, spender_is_account_flag), allowance_owner_keys) in keys {
         let migrated_spender_key = match spender_key {
             Key::Account(account_hash) => {
-                if !spender_flag {
+                if !spender_is_account_flag {
                     if event_on {
                         failure_map
                             .insert((spender_key, None), String::from("SpenderFlagMismatch"));
@@ -468,7 +479,7 @@ pub fn migrate_users_allowance_keys() {
                 Key::AddressableEntity(EntityAddr::Account(account_hash.value()))
             }
             Key::Hash(contract_package) => {
-                if spender_flag {
+                if spender_is_account_flag {
                     if event_on {
                         failure_map
                             .insert((spender_key, None), String::from("SpenderFlagMismatch"));
@@ -483,15 +494,15 @@ pub fn migrate_users_allowance_keys() {
                 if event_on {
                     failure_map.insert((spender_key, None), String::from("SpenderWrongKeyType"));
                 } else if revert_on {
-                    revert(Cep18Error::WrongKeyType)
+                    revert(Cep18Error::InvalidKeyType)
                 }
                 continue;
             }
         };
-        for (owner_key, owner_flag) in allowance_owner_keys {
+        for (owner_key, owner_is_account_flag) in allowance_owner_keys {
             let migrated_owner_key = match owner_key {
                 Key::Account(account_hash) => {
-                    if !owner_flag {
+                    if !owner_is_account_flag {
                         if event_on {
                             failure_map.insert(
                                 (spender_key, Some(owner_key)),
@@ -505,7 +516,7 @@ pub fn migrate_users_allowance_keys() {
                     Key::AddressableEntity(EntityAddr::Account(account_hash.value()))
                 }
                 Key::Hash(contract_package) => {
-                    if owner_flag {
+                    if owner_is_account_flag {
                         if event_on {
                             failure_map.insert(
                                 (spender_key, Some(owner_key)),
@@ -525,7 +536,7 @@ pub fn migrate_users_allowance_keys() {
                             String::from("OwnerWrongKeyType"),
                         );
                     } else if revert_on {
-                        revert(Cep18Error::WrongKeyType)
+                        revert(Cep18Error::InvalidKeyType)
                     }
                     continue;
                 }
@@ -570,20 +581,20 @@ pub fn migrate_users_allowance_keys() {
 pub fn upgrade(name: &str) {
     let entry_points = generate_entry_points();
 
-    let old_contract_package_hash = match runtime::get_key(&format!("{HASH_KEY_NAME_PREFIX}{name}"))
-    .unwrap_or_revert(){
-        Key::Hash(contract_hash) => contract_hash,
-        Key::AddressableEntity(EntityAddr::SmartContract(contract_hash)) => contract_hash,
-        Key::Package(package_hash) => package_hash,
-        _=>revert(Cep18Error::MissingPackageHashForUpgrade)
-    };
-    let contract_package_hash = PackageHash::new(old_contract_package_hash);
-
-    let previous_contract_hash = match runtime::get_key(&format!("{CONTRACT_NAME_PREFIX}{name}"))
-        .unwrap_or_revert(){
+    let old_contract_package_hash =
+        match runtime::get_key(&format!("{HASH_KEY_NAME_PREFIX}{name}")).unwrap_or_revert() {
             Key::Hash(contract_hash) => contract_hash,
             Key::AddressableEntity(EntityAddr::SmartContract(contract_hash)) => contract_hash,
-            _=>revert(Cep18Error::MissingContractHashForUpgrade)
+            Key::Package(package_hash) => package_hash,
+            _ => revert(Cep18Error::MissingPackageHashForUpgrade),
+        };
+    let contract_package_hash = PackageHash::new(old_contract_package_hash);
+
+    let previous_contract_hash =
+        match runtime::get_key(&format!("{CONTRACT_NAME_PREFIX}{name}")).unwrap_or_revert() {
+            Key::Hash(contract_hash) => contract_hash,
+            Key::AddressableEntity(EntityAddr::SmartContract(contract_hash)) => contract_hash,
+            _ => revert(Cep18Error::MissingContractHashForUpgrade),
         };
     let converted_previous_contract_hash = AddressableEntityHash::new(previous_contract_hash);
 
@@ -637,9 +648,11 @@ pub fn install_contract(name: &str) {
     let symbol: String = runtime::get_named_arg(SYMBOL);
     let decimals: u8 = runtime::get_named_arg(DECIMALS);
     let total_supply: U256 = runtime::get_named_arg(TOTAL_SUPPLY);
-    let events_mode: u8 =
+    let events_mode_arg: u8 =
         utils::get_optional_named_arg_with_user_errors(EVENTS_MODE, Cep18Error::InvalidEventsMode)
             .unwrap_or(0u8);
+
+    let events_mode: EventsMode = EventsMode::try_from(events_mode_arg).unwrap_or_revert();
 
     let admin_list: Option<Vec<Key>> =
         utils::get_optional_named_arg_with_user_errors(ADMIN_LIST, Cep18Error::InvalidAdminList);
@@ -662,7 +675,7 @@ pub fn install_contract(name: &str) {
     );
     named_keys.insert(
         EVENTS_MODE.to_string(),
-        storage::new_uref(events_mode).into(),
+        storage::new_uref(events_mode_arg).into(),
     );
     named_keys.insert(
         ENABLE_MINT_BURN.to_string(),
@@ -670,7 +683,7 @@ pub fn install_contract(name: &str) {
     );
     let entry_points = generate_entry_points();
 
-    let message_topics = if events_mode == 2 {
+    let message_topics = if events_mode == EventsMode::Native {
         let mut message_topics = BTreeMap::new();
         message_topics.insert(EVENTS.to_string(), MessageTopicOperation::Add);
         Some(message_topics)

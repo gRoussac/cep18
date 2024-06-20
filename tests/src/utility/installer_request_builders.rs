@@ -30,11 +30,15 @@ pub(crate) fn invert_cep18_address(address: Key) -> Key {
     match address {
         Key::Account(account_hash) => Key::Hash(account_hash.value()),
         Key::Hash(contract_hash) => Key::Account(AccountHash::new(contract_hash)),
-        Key::AddressableEntity(entity_addr)=>match entity_addr {
+        Key::AddressableEntity(entity_addr) => match entity_addr {
             EntityAddr::System(_) => panic!("Unsupported Key variant"),
-            EntityAddr::Account(account) => Key::AddressableEntity(EntityAddr::SmartContract(account)),
-            EntityAddr::SmartContract(contract) => Key::AddressableEntity(EntityAddr::Account(contract)),
-        }
+            EntityAddr::Account(account) => {
+                Key::AddressableEntity(EntityAddr::SmartContract(account))
+            }
+            EntityAddr::SmartContract(contract) => {
+                Key::AddressableEntity(EntityAddr::Account(contract))
+            }
+        },
         _ => panic!("Unsupported Key variant"),
     }
 }

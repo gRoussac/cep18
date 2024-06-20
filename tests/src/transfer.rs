@@ -40,8 +40,11 @@ fn should_transfer_full_owned_amount() {
     );
     assert_eq!(owner_balance_before, initial_supply);
 
-    let account_1_balance_before =
-        cep18_check_balance_of(&mut builder, &cep18_token, Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())));
+    let account_1_balance_before = cep18_check_balance_of(
+        &mut builder,
+        &cep18_token,
+        Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())),
+    );
     assert_eq!(account_1_balance_before, U256::zero());
 
     let token_transfer_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
@@ -57,8 +60,11 @@ fn should_transfer_full_owned_amount() {
         .expect_success()
         .commit();
 
-    let account_1_balance_after =
-        cep18_check_balance_of(&mut builder, &cep18_token, Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())));
+    let account_1_balance_after = cep18_check_balance_of(
+        &mut builder,
+        &cep18_token,
+        Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())),
+    );
     assert_eq!(account_1_balance_after, transfer_amount_1);
 
     let owner_balance_after = cep18_check_balance_of(
@@ -100,8 +106,11 @@ fn should_not_transfer_more_than_owned_balance() {
     assert_eq!(owner_balance_before, initial_supply);
     assert!(transfer_amount > owner_balance_before);
 
-    let account_1_balance_before =
-        cep18_check_balance_of(&mut builder, &cep18_token, Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())));
+    let account_1_balance_before = cep18_check_balance_of(
+        &mut builder,
+        &cep18_token,
+        Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())),
+    );
     assert_eq!(account_1_balance_before, U256::zero());
 
     let token_transfer_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
@@ -128,8 +137,11 @@ fn should_not_transfer_more_than_owned_balance() {
     );
     assert_eq!(account_1_balance_after, account_1_balance_before);
 
-    let owner_balance_after =
-        cep18_check_balance_of(&mut builder, &cep18_token, Key::AddressableEntity(EntityAddr::Account(transfer_1_sender.value())));
+    let owner_balance_after = cep18_check_balance_of(
+        &mut builder,
+        &cep18_token,
+        Key::AddressableEntity(EntityAddr::Account(transfer_1_sender.value())),
+    );
     assert_eq!(owner_balance_after, initial_supply);
 
     let total_supply: U256 = builder.get_value(
@@ -163,8 +175,11 @@ fn should_transfer_from_from_account_to_account() {
         ARG_AMOUNT => transfer_from_amount_1,
     };
 
-    let spender_allowance_before =
-        cep18_check_allowance_of(&mut builder, Key::AddressableEntity(EntityAddr::Account(owner.value())), Key::AddressableEntity(EntityAddr::Account(spender.value())));
+    let spender_allowance_before = cep18_check_allowance_of(
+        &mut builder,
+        Key::AddressableEntity(EntityAddr::Account(owner.value())),
+        Key::AddressableEntity(EntityAddr::Account(spender.value())),
+    );
     assert_eq!(spender_allowance_before, U256::zero());
 
     let approve_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
@@ -185,12 +200,18 @@ fn should_transfer_from_from_account_to_account() {
 
     builder.exec(approve_request_1).expect_success().commit();
 
-    let account_1_balance_before =
-        cep18_check_balance_of(&mut builder, &cep18_token, Key::AddressableEntity(EntityAddr::Account(owner.value())));
+    let account_1_balance_before = cep18_check_balance_of(
+        &mut builder,
+        &cep18_token,
+        Key::AddressableEntity(EntityAddr::Account(owner.value())),
+    );
     assert_eq!(account_1_balance_before, initial_supply);
 
-    let account_1_allowance_before =
-        cep18_check_allowance_of(&mut builder, Key::AddressableEntity(EntityAddr::Account(owner.value())), Key::AddressableEntity(EntityAddr::Account(spender.value())));
+    let account_1_allowance_before = cep18_check_allowance_of(
+        &mut builder,
+        Key::AddressableEntity(EntityAddr::Account(owner.value())),
+        Key::AddressableEntity(EntityAddr::Account(spender.value())),
+    );
     assert_eq!(account_1_allowance_before, allowance_amount_1);
 
     builder
@@ -198,15 +219,21 @@ fn should_transfer_from_from_account_to_account() {
         .expect_success()
         .commit();
 
-    let account_1_allowance_after =
-        cep18_check_allowance_of(&mut builder, Key::AddressableEntity(EntityAddr::Account(owner.value())), Key::AddressableEntity(EntityAddr::Account(spender.value())));
+    let account_1_allowance_after = cep18_check_allowance_of(
+        &mut builder,
+        Key::AddressableEntity(EntityAddr::Account(owner.value())),
+        Key::AddressableEntity(EntityAddr::Account(spender.value())),
+    );
     assert_eq!(
         account_1_allowance_after,
         account_1_allowance_before - transfer_from_amount_1
     );
 
-    let account_1_balance_after =
-        cep18_check_balance_of(&mut builder, &cep18_token, Key::AddressableEntity(EntityAddr::Account(owner.value())));
+    let account_1_balance_after = cep18_check_balance_of(
+        &mut builder,
+        &cep18_token,
+        Key::AddressableEntity(EntityAddr::Account(owner.value())),
+    );
     assert_eq!(
         account_1_balance_after,
         account_1_balance_before - transfer_from_amount_1
@@ -232,7 +259,9 @@ fn should_transfer_from_account_by_contract() {
 
     let owner = *DEFAULT_ACCOUNT_ADDR;
 
-    let spender = Key::AddressableEntity(EntityAddr::SmartContract(cep18_test_contract_package.value()));
+    let spender = Key::AddressableEntity(EntityAddr::SmartContract(
+        cep18_test_contract_package.value(),
+    ));
     let recipient = Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value()));
 
     let cep18_approve_args = runtime_args! {
@@ -247,8 +276,11 @@ fn should_transfer_from_account_by_contract() {
         ARG_AMOUNT => transfer_from_amount_1,
     };
 
-    let spender_allowance_before =
-        cep18_check_allowance_of(&mut builder, Key::AddressableEntity(EntityAddr::Account(owner.value())), spender);
+    let spender_allowance_before = cep18_check_allowance_of(
+        &mut builder,
+        Key::AddressableEntity(EntityAddr::Account(owner.value())),
+        spender,
+    );
     assert_eq!(spender_allowance_before, U256::zero());
 
     let approve_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
@@ -270,12 +302,18 @@ fn should_transfer_from_account_by_contract() {
 
     builder.exec(approve_request_1).expect_success().commit();
 
-    let owner_balance_before =
-        cep18_check_balance_of(&mut builder, &cep18_token, Key::AddressableEntity(EntityAddr::Account(owner.value())));
+    let owner_balance_before = cep18_check_balance_of(
+        &mut builder,
+        &cep18_token,
+        Key::AddressableEntity(EntityAddr::Account(owner.value())),
+    );
     assert_eq!(owner_balance_before, initial_supply);
 
-    let spender_allowance_before =
-        cep18_check_allowance_of(&mut builder, Key::AddressableEntity(EntityAddr::Account(owner.value())), spender);
+    let spender_allowance_before = cep18_check_allowance_of(
+        &mut builder,
+        Key::AddressableEntity(EntityAddr::Account(owner.value())),
+        spender,
+    );
     assert_eq!(spender_allowance_before, allowance_amount_1);
 
     builder
@@ -283,15 +321,21 @@ fn should_transfer_from_account_by_contract() {
         .expect_success()
         .commit();
 
-    let spender_allowance_after =
-        cep18_check_allowance_of(&mut builder, Key::AddressableEntity(EntityAddr::Account(owner.value())), spender);
+    let spender_allowance_after = cep18_check_allowance_of(
+        &mut builder,
+        Key::AddressableEntity(EntityAddr::Account(owner.value())),
+        spender,
+    );
     assert_eq!(
         spender_allowance_after,
         spender_allowance_before - transfer_from_amount_1
     );
 
-    let owner_balance_after =
-        cep18_check_balance_of(&mut builder, &cep18_token, Key::AddressableEntity(EntityAddr::Account(owner.value())));
+    let owner_balance_after = cep18_check_balance_of(
+        &mut builder,
+        &cep18_token,
+        Key::AddressableEntity(EntityAddr::Account(owner.value())),
+    );
     assert_eq!(
         owner_balance_after,
         owner_balance_before - transfer_from_amount_1
@@ -472,8 +516,12 @@ fn should_transfer_contract_to_contract() {
     } = test_context;
 
     let sender1 = Key::AddressableEntity(EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()));
-    let recipient1 = Key::AddressableEntity(EntityAddr::SmartContract(cep18_test_contract_package.value()));
-    let sender2 = Key::AddressableEntity(EntityAddr::SmartContract(cep18_test_contract_package.value()));
+    let recipient1 = Key::AddressableEntity(EntityAddr::SmartContract(
+        cep18_test_contract_package.value(),
+    ));
+    let sender2 = Key::AddressableEntity(EntityAddr::SmartContract(
+        cep18_test_contract_package.value(),
+    ));
     let recipient2 = Key::AddressableEntity(EntityAddr::SmartContract([42; 32]));
 
     test_cep18_transfer(
@@ -495,9 +543,13 @@ fn should_transfer_contract_to_account() {
     } = test_context;
 
     let sender1 = Key::AddressableEntity(EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()));
-    let recipient1 = Key::AddressableEntity(EntityAddr::SmartContract(cep18_test_contract_package.value()));
+    let recipient1 = Key::AddressableEntity(EntityAddr::SmartContract(
+        cep18_test_contract_package.value(),
+    ));
 
-    let sender2 = Key::AddressableEntity(EntityAddr::SmartContract(cep18_test_contract_package.value()));
+    let sender2 = Key::AddressableEntity(EntityAddr::SmartContract(
+        cep18_test_contract_package.value(),
+    ));
     let recipient2 = Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value()));
 
     test_cep18_transfer(
@@ -517,7 +569,9 @@ fn should_transfer_account_to_contract() {
     let sender1 = Key::AddressableEntity(EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()));
     let recipient1 = Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value()));
     let sender2 = Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value()));
-    let recipient2 = Key::AddressableEntity(EntityAddr::SmartContract(test_context.cep18_test_contract_package.value()));
+    let recipient2 = Key::AddressableEntity(EntityAddr::SmartContract(
+        test_context.cep18_test_contract_package.value(),
+    ));
 
     test_cep18_transfer(
         &mut builder,
