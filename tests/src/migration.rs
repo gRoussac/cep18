@@ -1,5 +1,9 @@
-use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
-use casper_types::{runtime_args, AddressableEntityHash, Key, U256};
+use std::collections::BTreeMap;
+
+use casper_engine_test_support::{
+    ExecuteRequestBuilder, UpgradeRequestBuilder, DEFAULT_ACCOUNT_ADDR,
+};
+use casper_types::{runtime_args, AccessRights, AddressableEntityHash, CLValue, EraId, Key, ProtocolVersion, SystemEntityRegistry, URef, U256};
 
 use crate::utility::{
     constants::{
@@ -57,23 +61,51 @@ fn should_upgrade_contract_version() {
 }
 
 #[test]
-fn should_migrate_1_5_6_to_2_0_0_rc2() {
-    let (mut builder, lmdb_fixture_state, _temp_dir) =
+fn should_migrate_1_5_6_to_2_0_0_rc3() {
+    let (mut builder, _lmdb_fixture_state, _temp_dir) =
         casper_fixtures::builder_from_global_state_fixture("cep18-1.5.6-minted");
 
-    // println!("get_entity_with_named_keys_by_entity_hash: {:?}", builder.get_entity_with_named_keys_by_entity_hash(AddressableEntityHash::new(DEFAULT_ACCOUNT_ADDR.value())));
-    // println!("get_engine_state: {:?}", builder.get_engine_state());
-    // println!("get_genesis_account: {:?}", builder.get_genesis_account());
+    let key = URef::new([0u8;32], AccessRights::all()).into();
 
-    let get_entity_by_account_hash = builder.get_entity_by_account_hash(*DEFAULT_ACCOUNT_ADDR);
-    println!("{get_entity_by_account_hash:?}");
+    let system_contract_hashes = builder.query(Some(_lmdb_fixture_state.post_state_hash), key, &Vec::new())
+    .expect("must have stored system").as_cl_value()
+    .expect("must clvalue")
+    .clone().into_t::<SystemEntityRegistry>().expect("convert btree");
 
-    let query_named_key_by_account_hash = builder.query_named_key_by_account_hash(
-        Some(lmdb_fixture_state.post_state_hash),
-        *DEFAULT_ACCOUNT_ADDR,
-        CEP18_TOKEN_CONTRACT_KEY,
+    let mut global_state_update = BTreeMap::new();
+    let registry = CLValue::from_t(system_contract_hashes).expect("must StoredValue").into();
+
+    global_state_update.insert(Key::SystemEntityRegistry, registry);
+
+    let mut upgrade_config = UpgradeRequestBuilder::new()
+        .with_current_protocol_version(ProtocolVersion::V1_0_0)
+        .with_new_protocol_version(ProtocolVersion::V2_0_0)
+        .with_migrate_legacy_accounts(true)
+        .with_migrate_legacy_contracts(true)
+        .with_global_state_update(global_state_update)
+        .with_activation_point(EraId::new(1))
+        .build();
+
+    builder.upgrade(&mut upgrade_config).expect_upgrade_success();
+
+    println!(
+        "get_entity_with_named_keys_by_entity_hash: {:?}",
+        builder.get_entity_with_named_keys_by_entity_hash(AddressableEntityHash::new(
+            DEFAULT_ACCOUNT_ADDR.value()
+        ))
     );
-    println!("{query_named_key_by_account_hash:?}");
+    println!("get_engine_state: {:?}", builder.get_engine_state());
+    println!("get_genesis_account: {:?}", builder.get_genesis_account());
+
+    // let get_entity_by_account_hash = builder.get_entity_by_account_hash(*DEFAULT_ACCOUNT_ADDR);
+    // println!("{get_entity_by_account_hash:?}");
+
+    // let query_named_key_by_account_hash = builder.query_named_key_by_account_hash(
+    //     Some(lmdb_fixture_state.post_state_hash),
+    //     *DEFAULT_ACCOUNT_ADDR,
+    //     CEP18_TOKEN_CONTRACT_KEY,
+    // );
+    // println!("{query_named_key_by_account_hash:?}");
 
     let get_entity_hash_by_account_hash =
         builder.get_entity_hash_by_account_hash(*DEFAULT_ACCOUNT_ADDR);
