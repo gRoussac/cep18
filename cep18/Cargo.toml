@@ -23,7 +23,3 @@ casper-contract = { git = "https://github.com/casper-network/casper-node.git", b
 hex = { version = "0.4.3", default-features = false }
 once_cell = { version = "1.16.0", default-features = false }
 casper-event-standard = { git = "https://github.com/deuszex/casper-event-standard", branch = "condor", default-features = false }
-
-[profile.release]
-codegen-units = 1
-lto = true

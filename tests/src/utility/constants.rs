@@ -51,12 +51,16 @@ pub static ACCOUNT_1_SECRET_KEY: Lazy<SecretKey> =
 pub static ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| PublicKey::from(&*ACCOUNT_1_SECRET_KEY));
 pub static ACCOUNT_1_ADDR: Lazy<AccountHash> = Lazy::new(|| ACCOUNT_1_PUBLIC_KEY.to_account_hash());
+pub static _ACCOUNT_1_ENTITY_ADDR_KEY: Lazy<Key> =
+    Lazy::new(|| Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())));
 
 pub static ACCOUNT_2_SECRET_KEY: Lazy<SecretKey> =
     Lazy::new(|| SecretKey::secp256k1_from_bytes([212u8; 32]).unwrap());
 pub static ACCOUNT_2_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| PublicKey::from(&*ACCOUNT_2_SECRET_KEY));
 pub static ACCOUNT_2_ADDR: Lazy<AccountHash> = Lazy::new(|| ACCOUNT_2_PUBLIC_KEY.to_account_hash());
+pub static _ACCOUNT_2_ENTITY_ADDR_KEY: Lazy<Key> =
+    Lazy::new(|| Key::AddressableEntity(EntityAddr::Account(ACCOUNT_2_ADDR.value())));
 
 pub const TRANSFER_AMOUNT_1: u64 = 200_001;
 pub const TRANSFER_AMOUNT_2: u64 = 19_999;
@@ -71,6 +75,8 @@ pub const TOKEN_OWNER_ADDRESS_1: Key = Key::AddressableEntity(EntityAddr::Accoun
 pub const TOKEN_OWNER_AMOUNT_1: u64 = 1_000_000;
 pub const TOKEN_OWNER_ADDRESS_2: Key = Key::AddressableEntity(EntityAddr::SmartContract([42; 32]));
 pub const TOKEN_OWNER_AMOUNT_2: u64 = 2_000_000;
+pub const TOKEN_OWNER_ADDRESS_1_OLD: Key = Key::Account(AccountHash::new([42; 32]));
+pub const _TOKEN_OWNER_ADDRESS_2_OLD: Key = Key::Hash([42; 32]);
 
 pub const METHOD_MINT: &str = "mint";
 pub const METHOD_BURN: &str = "burn";
@@ -81,3 +87,11 @@ pub const ADMIN_LIST: &str = "admin_list";
 pub const MINTER_LIST: &str = "minter_list";
 pub const NONE_LIST: &str = "none_list";
 pub const CHANGE_SECURITY: &str = "change_security";
+
+pub const USER_KEY_MAP: &str = "user_key_map";
+pub const EVENTS: &str = "events";
+pub const REVERT: &str = "revert";
+pub const EVENTS_MODE: &str = "events_mode";
+pub const MIGRATE_USER_BALANCE_KEYS_ENTRY_POINT_NAME: &str = "migrate_user_balance_keys";
+pub const _MIGRATE_USER_ALLOWANCE_KEYS_ENTRY_POINT_NAME: &str = "migrate_user_allowance_keys";
+pub const MIGRATE_USER_SEC_KEYS_ENTRY_POINT_NAME: &str = "migrate_sec_keys";

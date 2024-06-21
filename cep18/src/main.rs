@@ -26,8 +26,11 @@ use entry_points::generate_entry_points;
 
 use casper_contract::{
     contract_api::{
-        runtime::{self, get_caller, get_key, get_named_arg, put_key, revert},
-        storage::{self, dictionary_put},
+        runtime::{
+            self, call_contract, get_caller, get_key, get_named_arg, manage_message_topic, put_key,
+            revert,
+        },
+        storage::{self, dictionary_put, named_dictionary_get, named_dictionary_put},
     },
     unwrap_or_revert::UnwrapOrRevert,
 };
@@ -39,10 +42,11 @@ use casper_types::{
 };
 
 use constants::{
-    ACCESS_KEY_NAME_PREFIX, ADDRESS, ADMIN_LIST, ALLOWANCES, AMOUNT, BALANCES, CONTRACT_HASH,
-    CONTRACT_NAME_PREFIX, CONTRACT_VERSION_PREFIX, DECIMALS, ENABLE_MINT_BURN, EVENTS, EVENTS_MODE,
-    HASH_KEY_NAME_PREFIX, INIT_ENTRY_POINT_NAME, MINTER_LIST, NAME, NONE_LIST, OWNER, PACKAGE_HASH,
-    RECIPIENT, REVERT, SECURITY_BADGES, SPENDER, SYMBOL, TOTAL_SUPPLY, USER_KEY_MAP,
+    ACCESS_KEY_NAME_PREFIX, ADDRESS, ADMIN_LIST, ALLOWANCES, AMOUNT, BALANCES,
+    CHANGE_EVENTS_MODE_ENTRY_POINT_NAME, CONTRACT_HASH, CONTRACT_NAME_PREFIX,
+    CONTRACT_VERSION_PREFIX, DECIMALS, ENABLE_MINT_BURN, EVENTS, EVENTS_MODE, HASH_KEY_NAME_PREFIX,
+    INIT_ENTRY_POINT_NAME, MINTER_LIST, NAME, NONE_LIST, OWNER, PACKAGE_HASH, RECIPIENT, REVERT,
+    SECURITY_BADGES, SPENDER, SYMBOL, TOTAL_SUPPLY, USER_KEY_MAP,
 };
 pub use error::Cep18Error;
 use events::{
@@ -388,7 +392,7 @@ pub extern "C" fn change_security() {
 /// contract). Going forward these will be stored are Key::AddressableEntity(EntityAddr::Account)
 /// and Key::AddressableEntity(EntityAddr::SmartContract) respectively.
 #[no_mangle]
-pub fn migrate_users_balance_keys() {
+pub fn migrate_user_balance_keys() {
     let event_on: bool = get_named_arg(EVENTS);
     let revert_on: bool = get_named_arg(REVERT);
     let mut success_map: Vec<(Key, Key)> = Vec::new();
@@ -429,10 +433,15 @@ pub fn migrate_users_balance_keys() {
                 continue;
             }
         };
-        let balance = read_balance_from(balances_uref, old_key);
-        if balance > U256::zero() {
+        let old_balance = read_balance_from(balances_uref, old_key);
+        if old_balance > U256::zero() {
+            let new_key_existing_balance = read_balance_from(balances_uref, migrated_key);
             write_balance_to(balances_uref, old_key, U256::zero());
-            write_balance_to(balances_uref, migrated_key, balance)
+            write_balance_to(
+                balances_uref,
+                migrated_key,
+                new_key_existing_balance + old_balance,
+            )
         } else if event_on {
             failure_map.insert(old_key, String::from("NoOldKeyBal"));
         } else if revert_on {
@@ -456,7 +465,7 @@ pub fn migrate_users_balance_keys() {
 /// be stored are Key::AddressableEntity(EntityAddr::Account)
 /// and Key::AddressableEntity(EntityAddr::SmartContract) respectively.
 #[no_mangle]
-pub fn migrate_users_allowance_keys() {
+pub fn migrate_user_allowance_keys() {
     let event_on: bool = get_named_arg(EVENTS);
     let revert_on: bool = get_named_arg(REVERT);
     let mut success_map: Vec<((Key, Key), (Key, Key))> = Vec::new();
@@ -541,9 +550,11 @@ pub fn migrate_users_allowance_keys() {
                     continue;
                 }
             };
-            let allowance =
+            let old_allowance =
                 read_allowance_from(allowances_uref, migrated_owner_key, migrated_spender_key);
-            if allowance > U256::zero() {
+            if old_allowance > U256::zero() {
+                let new_key_existing_allowance =
+                    read_allowance_from(allowances_uref, migrated_owner_key, migrated_spender_key);
                 write_allowance_to(
                     allowances_uref,
                     migrated_owner_key,
@@ -554,7 +565,7 @@ pub fn migrate_users_allowance_keys() {
                     allowances_uref,
                     migrated_owner_key,
                     migrated_spender_key,
-                    allowance,
+                    new_key_existing_allowance + old_allowance,
                 )
             } else if event_on {
                 failure_map.insert(
@@ -578,6 +589,95 @@ pub fn migrate_users_allowance_keys() {
     }
 }
 
+#[no_mangle]
+pub fn migrate_sec_keys() {
+    let event_on: bool = get_named_arg(EVENTS);
+    let revert_on: bool = get_named_arg(REVERT);
+    let mut success_map: Vec<(Key, Key)> = Vec::new();
+    let mut failure_map: BTreeMap<Key, String> = BTreeMap::new();
+
+    let keys: BTreeMap<Key, bool> = get_named_arg(USER_KEY_MAP);
+    for (old_key, is_account_flag) in keys {
+        let migrated_key = match old_key {
+            Key::Account(account_hash) => {
+                if !is_account_flag {
+                    if event_on {
+                        failure_map.insert(old_key, String::from("FlagMismatch"));
+                    } else if revert_on {
+                        revert(Cep18Error::KeyTypeMigrationMismatch)
+                    }
+                    continue;
+                }
+                Key::AddressableEntity(EntityAddr::Account(account_hash.value()))
+            }
+            Key::Hash(contract_package) => {
+                if is_account_flag {
+                    if event_on {
+                        failure_map.insert(old_key, String::from("FlagMismatch"));
+                    } else if revert_on {
+                        revert(Cep18Error::KeyTypeMigrationMismatch)
+                    }
+                    continue;
+                }
+                Key::AddressableEntity(EntityAddr::SmartContract(contract_package))
+            }
+            _ => {
+                if event_on {
+                    failure_map.insert(old_key, String::from("WrongKeyType"));
+                } else if revert_on {
+                    revert(Cep18Error::InvalidKeyType)
+                }
+                continue;
+            }
+        };
+        let old_user_sec_key = old_key.to_bytes().unwrap_or_revert();
+        let old_encoded_user_sec_key = base64::encode(old_user_sec_key);
+
+        let user_sec_key = migrated_key.to_bytes().unwrap_or_revert();
+        let migrated_encoded_user_sec_key = base64::encode(user_sec_key);
+
+        let sec: SecurityBadge = named_dictionary_get(SECURITY_BADGES, &old_encoded_user_sec_key)
+            .unwrap_or_revert()
+            .unwrap_or(SecurityBadge::None);
+        if ![SecurityBadge::Admin, SecurityBadge::Minter].contains(&sec) {
+            named_dictionary_put(SECURITY_BADGES, &migrated_encoded_user_sec_key, sec);
+        } else if event_on {
+            failure_map.insert(old_key, String::from("NoValidBadge"));
+        } else if revert_on {
+            revert(Cep18Error::InsufficientRights)
+        }
+        success_map.push((old_key, migrated_key));
+    }
+
+    if event_on {
+        events::record_event_dictionary(Event::BalanceMigration(BalanceMigration {
+            success_map,
+            failure_map,
+        }));
+    }
+}
+
+#[no_mangle]
+fn change_events_mode() {
+    sec_check(vec![SecurityBadge::Admin]);
+    let events_mode: EventsMode =
+        EventsMode::try_from(read_from::<u8>(EVENTS_MODE)).unwrap_or_revert();
+
+    match events_mode {
+        EventsMode::NoEvents => {}
+        EventsMode::CES => init_events(),
+        EventsMode::Native => {
+            manage_message_topic(EVENTS, MessageTopicOperation::Add).unwrap_or_revert()
+        }
+        EventsMode::NativeNCES => {
+            init_events();
+            manage_message_topic(EVENTS, MessageTopicOperation::Add).unwrap_or_revert()
+        }
+    }
+
+    put_key(EVENTS_MODE, storage::new_uref(events_mode as u8).into());
+}
+
 pub fn upgrade(name: &str) {
     let entry_points = generate_entry_points();
 
@@ -598,33 +698,29 @@ pub fn upgrade(name: &str) {
         };
     let converted_previous_contract_hash = AddressableEntityHash::new(previous_contract_hash);
 
-    let events_mode: EventsMode = EventsMode::try_from(
-        utils::get_optional_named_arg_with_user_errors(EVENTS_MODE, Cep18Error::InvalidEventsMode)
-            .unwrap_or(0u8),
-    )
-    .unwrap_or(EventsMode::NoEvents);
-
-    // If event mode is native append the Add operation to the contract
-    let mut message_topics = BTreeMap::new();
-    if EventsMode::Native != events_mode {
-        message_topics.insert(EVENTS.to_string(), MessageTopicOperation::Add);
-    };
-
-    let mut named_keys = NamedKeys::new();
-    named_keys.insert(
-        EVENTS_MODE.to_string(),
-        storage::new_uref(events_mode as u8).into(),
-    );
-
     let (contract_hash, contract_version) = storage::add_contract_version(
         contract_package_hash,
         entry_points,
-        named_keys,
-        message_topics,
+        NamedKeys::new(),
+        BTreeMap::new(),
     );
 
     storage::disable_contract_version(contract_package_hash, converted_previous_contract_hash)
         .unwrap_or_revert();
+
+    let events_mode = utils::get_optional_named_arg_with_user_errors::<u8>(
+        EVENTS_MODE,
+        Cep18Error::InvalidEventsMode,
+    );
+    if let Some(events_mode) = events_mode {
+        call_contract::<()>(
+            contract_hash,
+            CHANGE_EVENTS_MODE_ENTRY_POINT_NAME,
+            runtime_args! {
+                EVENTS_MODE => events_mode
+            },
+        );
+    }
 
     // migrate old ContractPackageHash as PackageHash so it's stored in a uniform format with the
     // new `new_contract` implementation

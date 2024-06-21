@@ -17,7 +17,7 @@ setup-test: build-contract
 	cp ./target/wasm32-unknown-unknown/release/cep18_test_contract.wasm tests/wasm
 
 test: setup-test
-	cd tests && cargo test
+	cd tests && cargo test --lib
 
 clippy:
 	cd cep18 && cargo clippy --all-targets -- -D warnings

@@ -12,6 +12,7 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
+    account::AccountHash,
     api_error,
     bytesrepr::{self, FromBytes, ToBytes},
     system::Caller,
@@ -180,17 +181,50 @@ impl FromBytes for SecurityBadge {
 }
 
 pub fn sec_check(allowed_badge_list: Vec<SecurityBadge>) {
-    let caller = get_immediate_caller_address()
-        .unwrap_or_revert()
+    let caller = get_immediate_caller_address().unwrap_or_revert();
+    let hash: [u8; 32] = match caller {
+        Key::Account(account) => account.0,
+        Key::Hash(hash) => hash,
+        Key::AddressableEntity(addressable) => match addressable {
+            EntityAddr::System(_) => revert(Cep18Error::InvalidKeyType),
+            EntityAddr::Account(account) => account,
+            EntityAddr::SmartContract(hash) => hash,
+        },
+        _ => revert(Cep18Error::InvalidKeyType),
+    };
+    let new_style_key_bytes = Key::AddressableEntity(EntityAddr::Account(hash))
         .to_bytes()
         .unwrap_or_revert();
-    if !allowed_badge_list.contains(
-        &dictionary_get::<SecurityBadge>(get_uref(SECURITY_BADGES), &base64::encode(caller))
+    match dictionary_get::<SecurityBadge>(
+        get_uref(SECURITY_BADGES),
+        &base64::encode(new_style_key_bytes),
+    )
+    .unwrap_or_revert()
+    {
+        Some(badge) => {
+            if !allowed_badge_list.contains(&badge) {
+                revert(Cep18Error::InsufficientRights)
+            }
+        }
+        None => {
+            let old_style_key_bytes = Key::Account(AccountHash::new(hash))
+                .to_bytes()
+                .unwrap_or_revert();
+            match dictionary_get::<SecurityBadge>(
+                get_uref(SECURITY_BADGES),
+                &base64::encode(old_style_key_bytes),
+            )
             .unwrap_or_revert()
-            .unwrap_or_revert_with(Cep18Error::InsufficientRights),
-    ) {
-        revert(Cep18Error::InsufficientRights)
-    }
+            {
+                Some(badge) => {
+                    if !allowed_badge_list.contains(&badge) {
+                        revert(Cep18Error::InsufficientRights)
+                    }
+                }
+                None => revert(Cep18Error::InsufficientRights),
+            };
+        }
+    };
 }
 
 pub fn change_sec_badge(badge_map: &BTreeMap<Key, SecurityBadge>) {

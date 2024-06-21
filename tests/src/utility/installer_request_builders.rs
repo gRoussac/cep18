@@ -176,7 +176,7 @@ pub(crate) fn cep18_check_balance_of(
         .named_keys()
         .get(CEP18_TEST_CONTRACT_KEY)
         .and_then(|key| key.into_package_hash())
-        .expect("should have test contract hash");
+        .expect("should have test contract package hash");
 
     let check_balance_args = runtime_args! {
         ARG_TOKEN_CONTRACT => Key::addressable_entity_key(EntityKindTag::SmartContract, *cep18_contract_hash),
