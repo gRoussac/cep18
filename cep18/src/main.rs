@@ -744,11 +744,9 @@ pub fn install_contract(name: &str) {
     let symbol: String = runtime::get_named_arg(SYMBOL);
     let decimals: u8 = runtime::get_named_arg(DECIMALS);
     let total_supply: U256 = runtime::get_named_arg(TOTAL_SUPPLY);
-    let events_mode_arg: u8 =
+    let events_mode: u8 =
         utils::get_optional_named_arg_with_user_errors(EVENTS_MODE, Cep18Error::InvalidEventsMode)
             .unwrap_or(0u8);
-
-    let events_mode: EventsMode = EventsMode::try_from(events_mode_arg).unwrap_or_revert();
 
     let admin_list: Option<Vec<Key>> =
         utils::get_optional_named_arg_with_user_errors(ADMIN_LIST, Cep18Error::InvalidAdminList);
@@ -771,7 +769,7 @@ pub fn install_contract(name: &str) {
     );
     named_keys.insert(
         EVENTS_MODE.to_string(),
-        storage::new_uref(events_mode_arg).into(),
+        storage::new_uref(events_mode).into(),
     );
     named_keys.insert(
         ENABLE_MINT_BURN.to_string(),
@@ -779,7 +777,7 @@ pub fn install_contract(name: &str) {
     );
     let entry_points = generate_entry_points();
 
-    let message_topics = if events_mode == EventsMode::Native {
+    let message_topics = if EventsMode::Native == events_mode.try_into().unwrap_or_default() {
         let mut message_topics = BTreeMap::new();
         message_topics.insert(EVENTS.to_string(), MessageTopicOperation::Add);
         Some(message_topics)
@@ -796,18 +794,17 @@ pub fn install_contract(name: &str) {
         message_topics,
     );
     let package_hash = runtime::get_key(&hash_key_name).unwrap_or_revert();
+    let contract_hash_key =
+        Key::addressable_entity_key(EntityKindTag::SmartContract, contract_hash);
 
     // Store contract_hash and contract_version under the keys CONTRACT_NAME and CONTRACT_VERSION
-    runtime::put_key(
-        &format!("{CONTRACT_NAME_PREFIX}{name}"),
-        Key::addressable_entity_key(EntityKindTag::SmartContract, contract_hash),
-    );
+    runtime::put_key(&format!("{CONTRACT_NAME_PREFIX}{name}"), contract_hash_key);
     runtime::put_key(
         &format!("{CONTRACT_VERSION_PREFIX}{name}"),
         storage::new_uref(contract_version).into(),
     );
     // Call contract to initialize it
-    let mut init_args = runtime_args! {TOTAL_SUPPLY => total_supply, PACKAGE_HASH => package_hash, CONTRACT_HASH => Key::addressable_entity_key(EntityKindTag::SmartContract, contract_hash)};
+    let mut init_args = runtime_args! {TOTAL_SUPPLY => total_supply, PACKAGE_HASH => package_hash, CONTRACT_HASH => contract_hash_key};
 
     if let Some(admin_list) = admin_list {
         init_args.insert(ADMIN_LIST, admin_list).unwrap_or_revert();

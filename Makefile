@@ -1,3 +1,5 @@
+PINNED_TOOLCHAIN := $(shell cat cep18/rust-toolchain)
+
 prepare:
 	rustup target add wasm32-unknown-unknown
 	rustup component add clippy --toolchain ${PINNED_TOOLCHAIN}
