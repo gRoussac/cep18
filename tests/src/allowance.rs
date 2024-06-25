@@ -87,9 +87,15 @@ fn should_approve_funds_account_to_contract() {
 
 #[test]
 fn should_not_transfer_from_without_enough_allowance() {
-    let (mut builder, TestContext { cep18_token, .. }) = setup();
+    let (
+        mut builder,
+        TestContext {
+            cep18_contract_hash,
+            ..
+        },
+    ) = setup();
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
 
     let allowance_amount_1 = U256::from(ALLOWANCE_AMOUNT_1);
     let transfer_from_amount_1 = allowance_amount_1 + U256::one();
@@ -118,7 +124,7 @@ fn should_not_transfer_from_without_enough_allowance() {
 
     let approve_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         sender,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_APPROVE,
         cep18_approve_args,
     )
@@ -126,7 +132,7 @@ fn should_not_transfer_from_without_enough_allowance() {
 
     let transfer_from_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         sender,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_TRANSFER_FROM,
         cep18_transfer_from_args,
     )
@@ -153,9 +159,15 @@ fn should_not_transfer_from_without_enough_allowance() {
 
 #[test]
 fn test_decrease_allowance() {
-    let (mut builder, TestContext { cep18_token, .. }) = setup();
+    let (
+        mut builder,
+        TestContext {
+            cep18_contract_hash,
+            ..
+        },
+    ) = setup();
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
 
     let owner = *DEFAULT_ACCOUNT_ADDR;
     let spender = Key::Hash([42; 32]);
@@ -170,10 +182,10 @@ fn test_decrease_allowance() {
     assert_eq!(spender_allowance_before, U256::zero());
 
     let approve_request =
-        make_cep18_approve_request(owner_key, &cep18_token, spender, allowance_amount_1);
+        make_cep18_approve_request(owner_key, &cep18_contract_hash, spender, allowance_amount_1);
     let decrease_allowance_request = ExecuteRequestBuilder::contract_call_by_hash(
         owner,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         DECREASE_ALLOWANCE,
         runtime_args! {
             ARG_SPENDER => spender,
@@ -183,7 +195,7 @@ fn test_decrease_allowance() {
     .build();
     let increase_allowance_request = ExecuteRequestBuilder::contract_call_by_hash(
         owner,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         INCREASE_ALLOWANCE,
         runtime_args! {
             ARG_SPENDER => spender,

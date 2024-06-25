@@ -13,9 +13,9 @@ use crate::utility::{
 
 #[test]
 fn should_have_queryable_properties() {
-    let (mut builder, TestContext { cep18_token, .. }) = setup();
+    let (mut builder, TestContext { cep18_contract_hash, .. }) = setup();
 
-    let cep18_entity_addr = EntityAddr::new_smart_contract(cep18_token.value());
+    let cep18_entity_addr = EntityAddr::new_smart_contract(cep18_contract_hash.value());
 
     let name: String = builder.get_value(cep18_entity_addr, NAME_KEY);
     assert_eq!(name, TOKEN_NAME);
@@ -31,18 +31,18 @@ fn should_have_queryable_properties() {
 
     let owner_key = Key::AddressableEntity(EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()));
 
-    let owner_balance = cep18_check_balance_of(&mut builder, &cep18_token, owner_key);
+    let owner_balance = cep18_check_balance_of(&mut builder, &cep18_contract_hash, owner_key);
     assert_eq!(owner_balance, total_supply);
 
     let contract_balance =
-        cep18_check_balance_of(&mut builder, &cep18_token, Key::Hash(cep18_token.value()));
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, Key::Hash(cep18_contract_hash.value()));
     assert_eq!(contract_balance, U256::zero());
 
     // Ensures that Account and Contract ownership is respected and we're not keying ownership under
     // the raw bytes regardless of variant.
     let inverted_owner_key = invert_cep18_address(owner_key);
     let inverted_owner_balance =
-        cep18_check_balance_of(&mut builder, &cep18_token, inverted_owner_key);
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, inverted_owner_key);
     assert_eq!(inverted_owner_balance, U256::zero());
 }
 

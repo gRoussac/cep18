@@ -20,17 +20,17 @@ use casper_execution_engine::{engine_state::Error as CoreError, execution::ExecE
 fn test_mint_and_burn_tokens() {
     let mint_amount = U256::one();
 
-    let (mut builder, TestContext { cep18_token, .. }) = setup_with_args(runtime_args! {
+    let (mut builder, TestContext { cep18_contract_hash, .. }) = setup_with_args(runtime_args! {
         ARG_NAME => TOKEN_NAME,
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
         ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
         ENABLE_MINT_BURN => true,
     });
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
     )
@@ -38,7 +38,7 @@ fn test_mint_and_burn_tokens() {
     builder.exec(mint_request).expect_success().commit();
     let mint_request_2 = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_2, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_2)},
     )
@@ -47,7 +47,7 @@ fn test_mint_and_burn_tokens() {
     assert_eq!(
         cep18_check_balance_of(
             &mut builder,
-            &cep18_token,
+            &cep18_contract_hash,
             Key::AddressableEntity(casper_types::EntityAddr::Account(
                 DEFAULT_ACCOUNT_ADDR.value()
             ))
@@ -55,18 +55,18 @@ fn test_mint_and_burn_tokens() {
         U256::from(TOKEN_TOTAL_SUPPLY),
     );
     assert_eq!(
-        cep18_check_balance_of(&mut builder, &cep18_token, TOKEN_OWNER_ADDRESS_1),
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, TOKEN_OWNER_ADDRESS_1),
         U256::from(TOKEN_OWNER_AMOUNT_1)
     );
     assert_eq!(
-        cep18_check_balance_of(&mut builder, &cep18_token, TOKEN_OWNER_ADDRESS_2),
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, TOKEN_OWNER_ADDRESS_2),
         U256::from(TOKEN_OWNER_AMOUNT_2)
     );
-    let total_supply_before_mint = cep18_check_total_supply(&mut builder, &cep18_token);
+    let total_supply_before_mint = cep18_check_total_supply(&mut builder, &cep18_contract_hash);
 
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
@@ -78,15 +78,15 @@ fn test_mint_and_burn_tokens() {
     builder.exec(mint_request).expect_success().commit();
 
     assert_eq!(
-        cep18_check_balance_of(&mut builder, &cep18_token, TOKEN_OWNER_ADDRESS_1),
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, TOKEN_OWNER_ADDRESS_1),
         U256::from(TOKEN_OWNER_AMOUNT_1) + mint_amount,
     );
     assert_eq!(
-        cep18_check_balance_of(&mut builder, &cep18_token, TOKEN_OWNER_ADDRESS_2),
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, TOKEN_OWNER_ADDRESS_2),
         U256::from(TOKEN_OWNER_AMOUNT_2)
     );
 
-    let total_supply_after_mint = cep18_check_total_supply(&mut builder, &cep18_token);
+    let total_supply_after_mint = cep18_check_total_supply(&mut builder, &cep18_contract_hash);
     assert_eq!(
         total_supply_after_mint,
         total_supply_before_mint + mint_amount,
@@ -95,7 +95,7 @@ fn test_mint_and_burn_tokens() {
 
     let burn_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_BURN,
         runtime_args! {
             ARG_OWNER => Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value())),
@@ -109,7 +109,7 @@ fn test_mint_and_burn_tokens() {
     assert_eq!(
         cep18_check_balance_of(
             &mut builder,
-            &cep18_token,
+            &cep18_contract_hash,
             Key::AddressableEntity(casper_types::EntityAddr::Account(
                 DEFAULT_ACCOUNT_ADDR.value()
             ))
@@ -117,10 +117,10 @@ fn test_mint_and_burn_tokens() {
         U256::from(999999999),
     );
     assert_eq!(
-        cep18_check_balance_of(&mut builder, &cep18_token, TOKEN_OWNER_ADDRESS_2),
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, TOKEN_OWNER_ADDRESS_2),
         U256::from(TOKEN_OWNER_AMOUNT_2)
     );
-    let total_supply_after_burn = cep18_check_total_supply(&mut builder, &cep18_token);
+    let total_supply_after_burn = cep18_check_total_supply(&mut builder, &cep18_contract_hash);
     assert_eq!(
         total_supply_after_burn,
         total_supply_before_burn - mint_amount,
@@ -133,7 +133,7 @@ fn test_mint_and_burn_tokens() {
 fn test_should_not_mint_above_limits() {
     let mint_amount = U256::MAX;
 
-    let (mut builder, TestContext { cep18_token, .. }) = setup_with_args(runtime_args! {
+    let (mut builder, TestContext { cep18_contract_hash, .. }) = setup_with_args(runtime_args! {
         ARG_NAME => TOKEN_NAME,
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
@@ -141,10 +141,10 @@ fn test_should_not_mint_above_limits() {
         "enable_mint_burn" => true,
     });
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
     )
@@ -152,20 +152,20 @@ fn test_should_not_mint_above_limits() {
     builder.exec(mint_request).expect_success().commit();
     let mint_request_2 = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_2, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_2)},
     )
     .build();
     builder.exec(mint_request_2).expect_success().commit();
     assert_eq!(
-        cep18_check_balance_of(&mut builder, &cep18_token, TOKEN_OWNER_ADDRESS_1),
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, TOKEN_OWNER_ADDRESS_1),
         U256::from(TOKEN_OWNER_AMOUNT_1)
     );
 
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
@@ -186,7 +186,7 @@ fn test_should_not_mint_above_limits() {
 
 #[test]
 fn test_should_not_burn_above_balance() {
-    let (mut builder, TestContext { cep18_token, .. }) = setup_with_args(runtime_args! {
+    let (mut builder, TestContext { cep18_contract_hash, .. }) = setup_with_args(runtime_args! {
         ARG_NAME => TOKEN_NAME,
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
@@ -194,10 +194,10 @@ fn test_should_not_burn_above_balance() {
         "enable_mint_burn" => true,
     });
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
     let burn_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_BURN,
         runtime_args! {
             ARG_OWNER => Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value())),
@@ -220,7 +220,7 @@ fn test_should_not_burn_above_balance() {
 fn test_should_not_mint_or_burn_with_entrypoint_disabled() {
     let mint_amount = U256::one();
 
-    let (mut builder, TestContext { cep18_token, .. }) = setup_with_args(runtime_args! {
+    let (mut builder, TestContext { cep18_contract_hash, .. }) = setup_with_args(runtime_args! {
         ARG_NAME => TOKEN_NAME,
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
@@ -228,10 +228,10 @@ fn test_should_not_mint_or_burn_with_entrypoint_disabled() {
         ENABLE_MINT_BURN => false,
     });
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
@@ -251,7 +251,7 @@ fn test_should_not_mint_or_burn_with_entrypoint_disabled() {
 
     let burn_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_BURN,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
@@ -274,7 +274,7 @@ fn test_should_not_mint_or_burn_with_entrypoint_disabled() {
 fn test_security_no_rights() {
     let mint_amount = U256::one();
 
-    let (mut builder, TestContext { cep18_token, .. }) = setup_with_args(runtime_args! {
+    let (mut builder, TestContext { cep18_contract_hash, .. }) = setup_with_args(runtime_args! {
         ARG_NAME => TOKEN_NAME,
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
@@ -282,10 +282,10 @@ fn test_security_no_rights() {
         ENABLE_MINT_BURN => true,
     });
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *ACCOUNT_1_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {
             ARG_OWNER => Key::AddressableEntity(casper_types::EntityAddr::Account(ACCOUNT_1_ADDR.value())),
@@ -305,7 +305,7 @@ fn test_security_no_rights() {
 
     let passing_admin_mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {
             ARG_OWNER => Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())),
@@ -321,7 +321,7 @@ fn test_security_no_rights() {
 
     let burn_request = ExecuteRequestBuilder::contract_call_by_hash(
         *ACCOUNT_1_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_BURN,
         runtime_args! {
             ARG_OWNER => Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())),
@@ -337,7 +337,7 @@ fn test_security_no_rights() {
 fn test_security_minter_rights() {
     let mint_amount = U256::one();
 
-    let (mut builder, TestContext { cep18_token, .. }) = setup_with_args(runtime_args! {
+    let (mut builder, TestContext { cep18_contract_hash, .. }) = setup_with_args(runtime_args! {
         ARG_NAME => TOKEN_NAME,
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
@@ -346,10 +346,10 @@ fn test_security_minter_rights() {
         MINTER_LIST => vec![Key::AddressableEntity(casper_types::EntityAddr::Account(ACCOUNT_1_ADDR.value()))]
     });
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *ACCOUNT_1_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
@@ -365,7 +365,7 @@ fn test_security_minter_rights() {
 fn test_security_burner_rights() {
     let mint_amount = U256::one();
 
-    let (mut builder, TestContext { cep18_token, .. }) = setup_with_args(runtime_args! {
+    let (mut builder, TestContext { cep18_contract_hash, .. }) = setup_with_args(runtime_args! {
         ARG_NAME => TOKEN_NAME,
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
@@ -373,10 +373,10 @@ fn test_security_burner_rights() {
         ENABLE_MINT_BURN => true,
     });
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *ACCOUNT_1_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
@@ -397,7 +397,7 @@ fn test_security_burner_rights() {
     // mint by admin
     let working_mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {
             ARG_OWNER => Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value())),
@@ -411,7 +411,7 @@ fn test_security_burner_rights() {
     // any user can burn
     let burn_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_BURN,
         runtime_args! {
             ARG_OWNER => Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value())),
@@ -427,7 +427,7 @@ fn test_security_burner_rights() {
 fn test_change_security() {
     let mint_amount = U256::one();
 
-    let (mut builder, TestContext { cep18_token, .. }) = setup_with_args(runtime_args! {
+    let (mut builder, TestContext { cep18_contract_hash, .. }) = setup_with_args(runtime_args! {
         ARG_NAME => TOKEN_NAME,
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
@@ -436,10 +436,10 @@ fn test_change_security() {
         ADMIN_LIST => vec![Key::AddressableEntity(casper_types::EntityAddr::Account(ACCOUNT_1_ADDR.value()))]
     });
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
     let change_security_request = ExecuteRequestBuilder::contract_call_by_hash(
         *ACCOUNT_1_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         CHANGE_SECURITY,
         runtime_args! {
             NONE_LIST => vec![Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()))],
@@ -454,7 +454,7 @@ fn test_change_security() {
 
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,

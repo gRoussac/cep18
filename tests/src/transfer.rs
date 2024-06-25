@@ -21,9 +21,15 @@ use casper_execution_engine::{engine_state::Error as CoreError, execution::ExecE
 
 #[test]
 fn should_transfer_full_owned_amount() {
-    let (mut builder, TestContext { cep18_token, .. }) = setup();
+    let (
+        mut builder,
+        TestContext {
+            cep18_contract_hash,
+            ..
+        },
+    ) = setup();
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
     let initial_supply = U256::from(TOKEN_TOTAL_SUPPLY);
     let transfer_amount_1 = initial_supply;
 
@@ -35,21 +41,21 @@ fn should_transfer_full_owned_amount() {
 
     let owner_balance_before = cep18_check_balance_of(
         &mut builder,
-        &cep18_token,
+        &cep18_contract_hash,
         Key::AddressableEntity(EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value())),
     );
     assert_eq!(owner_balance_before, initial_supply);
 
     let account_1_balance_before = cep18_check_balance_of(
         &mut builder,
-        &cep18_token,
+        &cep18_contract_hash,
         Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())),
     );
     assert_eq!(account_1_balance_before, U256::zero());
 
     let token_transfer_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         transfer_1_sender,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_TRANSFER,
         cep18_transfer_1_args,
     )
@@ -62,20 +68,20 @@ fn should_transfer_full_owned_amount() {
 
     let account_1_balance_after = cep18_check_balance_of(
         &mut builder,
-        &cep18_token,
+        &cep18_contract_hash,
         Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())),
     );
     assert_eq!(account_1_balance_after, transfer_amount_1);
 
     let owner_balance_after = cep18_check_balance_of(
         &mut builder,
-        &cep18_token,
+        &cep18_contract_hash,
         Key::AddressableEntity(EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value())),
     );
     assert_eq!(owner_balance_after, U256::zero());
 
     let total_supply: U256 = builder.get_value(
-        EntityAddr::new_smart_contract(cep18_token.value()),
+        EntityAddr::new_smart_contract(cep18_contract_hash.value()),
         TOTAL_SUPPLY_KEY,
     );
     assert_eq!(total_supply, initial_supply);
@@ -83,9 +89,15 @@ fn should_transfer_full_owned_amount() {
 
 #[test]
 fn should_not_transfer_more_than_owned_balance() {
-    let (mut builder, TestContext { cep18_token, .. }) = setup();
+    let (
+        mut builder,
+        TestContext {
+            cep18_contract_hash,
+            ..
+        },
+    ) = setup();
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
 
     let initial_supply = U256::from(TOKEN_TOTAL_SUPPLY);
     let transfer_amount = initial_supply + U256::one();
@@ -100,7 +112,7 @@ fn should_not_transfer_more_than_owned_balance() {
 
     let owner_balance_before = cep18_check_balance_of(
         &mut builder,
-        &cep18_token,
+        &cep18_contract_hash,
         Key::AddressableEntity(EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value())),
     );
     assert_eq!(owner_balance_before, initial_supply);
@@ -108,14 +120,14 @@ fn should_not_transfer_more_than_owned_balance() {
 
     let account_1_balance_before = cep18_check_balance_of(
         &mut builder,
-        &cep18_token,
+        &cep18_contract_hash,
         Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())),
     );
     assert_eq!(account_1_balance_before, U256::zero());
 
     let token_transfer_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         transfer_1_sender,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_TRANSFER,
         cep18_transfer_1_args,
     )
@@ -132,20 +144,20 @@ fn should_not_transfer_more_than_owned_balance() {
 
     let account_1_balance_after = cep18_check_balance_of(
         &mut builder,
-        &cep18_token,
+        &cep18_contract_hash,
         Key::AddressableEntity(EntityAddr::Account(transfer_1_recipient.value())),
     );
     assert_eq!(account_1_balance_after, account_1_balance_before);
 
     let owner_balance_after = cep18_check_balance_of(
         &mut builder,
-        &cep18_token,
+        &cep18_contract_hash,
         Key::AddressableEntity(EntityAddr::Account(transfer_1_sender.value())),
     );
     assert_eq!(owner_balance_after, initial_supply);
 
     let total_supply: U256 = builder.get_value(
-        EntityAddr::new_smart_contract(cep18_token.value()),
+        EntityAddr::new_smart_contract(cep18_contract_hash.value()),
         TOTAL_SUPPLY_KEY,
     );
     assert_eq!(total_supply, initial_supply);
@@ -153,9 +165,15 @@ fn should_not_transfer_more_than_owned_balance() {
 
 #[test]
 fn should_transfer_from_from_account_to_account() {
-    let (mut builder, TestContext { cep18_token, .. }) = setup();
+    let (
+        mut builder,
+        TestContext {
+            cep18_contract_hash,
+            ..
+        },
+    ) = setup();
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
 
     let initial_supply = U256::from(TOKEN_TOTAL_SUPPLY);
     let allowance_amount_1 = U256::from(ALLOWANCE_AMOUNT_1);
@@ -184,7 +202,7 @@ fn should_transfer_from_from_account_to_account() {
 
     let approve_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         owner,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_APPROVE,
         cep18_approve_args,
     )
@@ -192,7 +210,7 @@ fn should_transfer_from_from_account_to_account() {
 
     let transfer_from_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         spender,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_TRANSFER_FROM,
         cep18_transfer_from_args,
     )
@@ -202,7 +220,7 @@ fn should_transfer_from_from_account_to_account() {
 
     let account_1_balance_before = cep18_check_balance_of(
         &mut builder,
-        &cep18_token,
+        &cep18_contract_hash,
         Key::AddressableEntity(EntityAddr::Account(owner.value())),
     );
     assert_eq!(account_1_balance_before, initial_supply);
@@ -231,7 +249,7 @@ fn should_transfer_from_from_account_to_account() {
 
     let account_1_balance_after = cep18_check_balance_of(
         &mut builder,
-        &cep18_token,
+        &cep18_contract_hash,
         Key::AddressableEntity(EntityAddr::Account(owner.value())),
     );
     assert_eq!(
@@ -245,13 +263,13 @@ fn should_transfer_from_account_by_contract() {
     let (
         mut builder,
         TestContext {
-            cep18_token,
+            cep18_contract_hash,
             cep18_test_contract_package,
             ..
         },
     ) = setup();
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
 
     let initial_supply = U256::from(TOKEN_TOTAL_SUPPLY);
     let allowance_amount_1 = U256::from(ALLOWANCE_AMOUNT_1);
@@ -270,7 +288,7 @@ fn should_transfer_from_account_by_contract() {
         ARG_AMOUNT => allowance_amount_1,
     };
     let cep18_transfer_from_args = runtime_args! {
-        ARG_TOKEN_CONTRACT => Key::addressable_entity_key(EntityKindTag::SmartContract, cep18_token),
+        ARG_TOKEN_CONTRACT => Key::addressable_entity_key(EntityKindTag::SmartContract, cep18_contract_hash),
         ARG_OWNER => Key::AddressableEntity(EntityAddr::Account(owner.value())),
         ARG_RECIPIENT => recipient,
         ARG_AMOUNT => transfer_from_amount_1,
@@ -285,7 +303,7 @@ fn should_transfer_from_account_by_contract() {
 
     let approve_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         owner,
-        addressable_cep18_token,
+        addressable_cep18_contract_hash,
         METHOD_APPROVE,
         cep18_approve_args,
     )
@@ -304,7 +322,7 @@ fn should_transfer_from_account_by_contract() {
 
     let owner_balance_before = cep18_check_balance_of(
         &mut builder,
-        &cep18_token,
+        &cep18_contract_hash,
         Key::AddressableEntity(EntityAddr::Account(owner.value())),
     );
     assert_eq!(owner_balance_before, initial_supply);
@@ -333,7 +351,7 @@ fn should_transfer_from_account_by_contract() {
 
     let owner_balance_after = cep18_check_balance_of(
         &mut builder,
-        &cep18_token,
+        &cep18_contract_hash,
         Key::AddressableEntity(EntityAddr::Account(owner.value())),
     );
     assert_eq!(
@@ -344,20 +362,27 @@ fn should_transfer_from_account_by_contract() {
 
 #[test]
 fn should_not_be_able_to_own_transfer() {
-    let (mut builder, TestContext { cep18_token, .. }) = setup();
+    let (
+        mut builder,
+        TestContext {
+            cep18_contract_hash,
+            ..
+        },
+    ) = setup();
 
     let sender = Key::AddressableEntity(EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()));
     let recipient = Key::AddressableEntity(EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()));
 
     let transfer_amount = U256::from(TRANSFER_AMOUNT_1);
 
-    let sender_balance_before = cep18_check_balance_of(&mut builder, &cep18_token, sender);
-    let recipient_balance_before = cep18_check_balance_of(&mut builder, &cep18_token, recipient);
+    let sender_balance_before = cep18_check_balance_of(&mut builder, &cep18_contract_hash, sender);
+    let recipient_balance_before =
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, recipient);
 
     assert_eq!(sender_balance_before, recipient_balance_before);
 
     let token_transfer_request_1 =
-        make_cep18_transfer_request(sender, &cep18_token, recipient, transfer_amount);
+        make_cep18_transfer_request(sender, &cep18_contract_hash, recipient, transfer_amount);
 
     builder.exec(token_transfer_request_1).commit();
 
@@ -371,9 +396,15 @@ fn should_not_be_able_to_own_transfer() {
 
 #[test]
 fn should_not_be_able_to_own_transfer_from() {
-    let (mut builder, TestContext { cep18_token, .. }) = setup();
+    let (
+        mut builder,
+        TestContext {
+            cep18_contract_hash,
+            ..
+        },
+    ) = setup();
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
 
     let sender = *DEFAULT_ACCOUNT_ADDR;
     let owner = Key::AddressableEntity(EntityAddr::Account(sender.value()));
@@ -385,7 +416,7 @@ fn should_not_be_able_to_own_transfer_from() {
     let transfer_amount = U256::from(TRANSFER_AMOUNT_1);
 
     let approve_request =
-        make_cep18_approve_request(sender_key, &cep18_token, spender, allowance_amount);
+        make_cep18_approve_request(sender_key, &cep18_contract_hash, spender, allowance_amount);
 
     builder.exec(approve_request).commit();
 
@@ -396,8 +427,10 @@ fn should_not_be_able_to_own_transfer_from() {
         error
     );
 
-    let sender_balance_before = cep18_check_balance_of(&mut builder, &cep18_token, sender_key);
-    let recipient_balance_before = cep18_check_balance_of(&mut builder, &cep18_token, recipient);
+    let sender_balance_before =
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, sender_key);
+    let recipient_balance_before =
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, recipient);
 
     assert_eq!(sender_balance_before, recipient_balance_before);
 
@@ -409,7 +442,7 @@ fn should_not_be_able_to_own_transfer_from() {
         };
         ExecuteRequestBuilder::contract_call_by_hash(
             sender,
-            addressable_cep18_token,
+            addressable_cep18_contract_hash,
             METHOD_TRANSFER_FROM,
             cep18_transfer_from_args,
         )
@@ -428,36 +461,50 @@ fn should_not_be_able_to_own_transfer_from() {
 
 #[test]
 fn should_verify_zero_amount_transfer_is_noop() {
-    let (mut builder, TestContext { cep18_token, .. }) = setup();
+    let (
+        mut builder,
+        TestContext {
+            cep18_contract_hash,
+            ..
+        },
+    ) = setup();
 
     let sender = Key::AddressableEntity(EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()));
     let recipient = Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value()));
 
     let transfer_amount = U256::zero();
 
-    let sender_balance_before = cep18_check_balance_of(&mut builder, &cep18_token, sender);
-    let recipient_balance_before = cep18_check_balance_of(&mut builder, &cep18_token, recipient);
+    let sender_balance_before = cep18_check_balance_of(&mut builder, &cep18_contract_hash, sender);
+    let recipient_balance_before =
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, recipient);
 
     let token_transfer_request_1 =
-        make_cep18_transfer_request(sender, &cep18_token, recipient, transfer_amount);
+        make_cep18_transfer_request(sender, &cep18_contract_hash, recipient, transfer_amount);
 
     builder
         .exec(token_transfer_request_1)
         .expect_success()
         .commit();
 
-    let sender_balance_after = cep18_check_balance_of(&mut builder, &cep18_token, sender);
+    let sender_balance_after = cep18_check_balance_of(&mut builder, &cep18_contract_hash, sender);
     assert_eq!(sender_balance_before, sender_balance_after);
 
-    let recipient_balance_after = cep18_check_balance_of(&mut builder, &cep18_token, recipient);
+    let recipient_balance_after =
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, recipient);
     assert_eq!(recipient_balance_before, recipient_balance_after);
 }
 
 #[test]
 fn should_verify_zero_amount_transfer_from_is_noop() {
-    let (mut builder, TestContext { cep18_token, .. }) = setup();
+    let (
+        mut builder,
+        TestContext {
+            cep18_contract_hash,
+            ..
+        },
+    ) = setup();
 
-    let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+    let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
 
     let owner = *DEFAULT_ACCOUNT_ADDR;
     let owner_key = Key::AddressableEntity(EntityAddr::Account(owner.value()));
@@ -468,14 +515,16 @@ fn should_verify_zero_amount_transfer_from_is_noop() {
     let transfer_amount = U256::zero();
 
     let approve_request =
-        make_cep18_approve_request(owner_key, &cep18_token, spender, allowance_amount);
+        make_cep18_approve_request(owner_key, &cep18_contract_hash, spender, allowance_amount);
 
     builder.exec(approve_request).expect_success().commit();
 
     let spender_allowance_before = cep18_check_allowance_of(&mut builder, owner_key, spender);
 
-    let owner_balance_before = cep18_check_balance_of(&mut builder, &cep18_token, owner_key);
-    let recipient_balance_before = cep18_check_balance_of(&mut builder, &cep18_token, recipient);
+    let owner_balance_before =
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, owner_key);
+    let recipient_balance_before =
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, recipient);
 
     let transfer_from_request = {
         let cep18_transfer_from_args = runtime_args! {
@@ -485,7 +534,7 @@ fn should_verify_zero_amount_transfer_from_is_noop() {
         };
         ExecuteRequestBuilder::contract_call_by_hash(
             owner,
-            addressable_cep18_token,
+            addressable_cep18_contract_hash,
             METHOD_TRANSFER_FROM,
             cep18_transfer_from_args,
         )
@@ -497,10 +546,11 @@ fn should_verify_zero_amount_transfer_from_is_noop() {
         .expect_success()
         .commit();
 
-    let owner_balance_after = cep18_check_balance_of(&mut builder, &cep18_token, owner_key);
+    let owner_balance_after = cep18_check_balance_of(&mut builder, &cep18_contract_hash, owner_key);
     assert_eq!(owner_balance_before, owner_balance_after);
 
-    let recipient_balance_after = cep18_check_balance_of(&mut builder, &cep18_token, recipient);
+    let recipient_balance_after =
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, recipient);
     assert_eq!(recipient_balance_before, recipient_balance_after);
 
     let spender_allowance_after = cep18_check_allowance_of(&mut builder, owner_key, spender);

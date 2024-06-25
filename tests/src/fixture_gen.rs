@@ -190,15 +190,15 @@ fn main() {
             .unwrap();
         let account_named_keys = account.named_keys();
 
-        let cep18_token = account_named_keys
+        let cep18_contract_hash = account_named_keys
             .get(CEP18_TOKEN_CONTRACT_KEY)
             .and_then(|key| key.into_entity_hash())
             .expect("should have contract hash");
 
-        let addressable_cep18_token = AddressableEntityHash::new(cep18_token.value());
+        let addressable_cep18_contract_hash = AddressableEntityHash::new(cep18_contract_hash.value());
         let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
             *DEFAULT_ACCOUNT_ADDR,
-            addressable_cep18_token,
+            addressable_cep18_contract_hash,
             METHOD_MINT,
             runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
         )
@@ -206,7 +206,7 @@ fn main() {
         builder.exec(mint_request).expect_success().commit();
         let mint_request_2 = ExecuteRequestBuilder::contract_call_by_hash(
             *DEFAULT_ACCOUNT_ADDR,
-            addressable_cep18_token,
+            addressable_cep18_contract_hash,
             METHOD_MINT,
             runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_2, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_2)},
         )
@@ -215,23 +215,23 @@ fn main() {
         assert_eq!(
             cep18_check_balance_of(
                 builder,
-                &cep18_token,
+                &cep18_contract_hash,
                 Key::AddressableEntity(casper_types::EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()))
             ),
             U256::from(TOKEN_TOTAL_SUPPLY),
         );
         assert_eq!(
-            cep18_check_balance_of(builder, &cep18_token, TOKEN_OWNER_ADDRESS_1),
+            cep18_check_balance_of(builder, &cep18_contract_hash, TOKEN_OWNER_ADDRESS_1),
             U256::from(TOKEN_OWNER_AMOUNT_1)
         );
         assert_eq!(
-            cep18_check_balance_of(builder, &cep18_token, TOKEN_OWNER_ADDRESS_2),
+            cep18_check_balance_of(builder, &cep18_contract_hash, TOKEN_OWNER_ADDRESS_2),
             U256::from(TOKEN_OWNER_AMOUNT_2)
         );
 
         let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
             *DEFAULT_ACCOUNT_ADDR,
-            addressable_cep18_token,
+            addressable_cep18_contract_hash,
             METHOD_MINT,
             runtime_args! {
                 ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
@@ -243,11 +243,11 @@ fn main() {
         builder.exec(mint_request).expect_success().commit();
 
         assert_eq!(
-            cep18_check_balance_of(builder, &cep18_token, TOKEN_OWNER_ADDRESS_1),
+            cep18_check_balance_of(builder, &cep18_contract_hash, TOKEN_OWNER_ADDRESS_1),
             U256::from(TOKEN_OWNER_AMOUNT_1) + mint_amount,
         );
         assert_eq!(
-            cep18_check_balance_of(builder, &cep18_token, TOKEN_OWNER_ADDRESS_2),
+            cep18_check_balance_of(builder, &cep18_contract_hash, TOKEN_OWNER_ADDRESS_2),
             U256::from(TOKEN_OWNER_AMOUNT_2)
         );
     }).unwrap();

@@ -18,7 +18,7 @@ use crate::utility::{
 
 #[test]
 fn should_upgrade_contract_version() {
-    let (mut builder, TestContext { cep18_token: _, .. }) = setup();
+    let (mut builder, TestContext { cep18_contract_hash: _, .. }) = setup();
 
     let version_0: u32 = builder
         .query(
@@ -138,7 +138,7 @@ fn should_migrate_1_5_6_to_2_0_0_rc3() {
         .unwrap();
     let account_named_keys = account.named_keys();
 
-    let cep18_token = account_named_keys
+    let cep18_contract_hash = account_named_keys
         .get(CEP18_TOKEN_CONTRACT_KEY)
         .and_then(|key| key.into_entity_hash())
         .expect("should have contract hash");
@@ -149,7 +149,7 @@ fn should_migrate_1_5_6_to_2_0_0_rc3() {
 
     let sec_key_migrate_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        cep18_token,
+        cep18_contract_hash,
         MIGRATE_USER_SEC_KEYS_ENTRY_POINT_NAME,
         runtime_args! {EVENTS => true, REVERT => true, USER_KEY_MAP => &user_map},
     )
@@ -162,7 +162,7 @@ fn should_migrate_1_5_6_to_2_0_0_rc3() {
 
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        cep18_token,
+        cep18_contract_hash,
         METHOD_MINT,
         runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
     )
@@ -180,13 +180,13 @@ fn should_migrate_1_5_6_to_2_0_0_rc3() {
     builder.exec(test_contract).expect_success().commit();
 
     assert_eq!(
-        cep18_check_balance_of(&mut builder, &cep18_token, TOKEN_OWNER_ADDRESS_1),
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, TOKEN_OWNER_ADDRESS_1),
         U256::from(TOKEN_OWNER_AMOUNT_1),
     );
 
     let balance_migrate_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
-        cep18_token,
+        cep18_contract_hash,
         MIGRATE_USER_BALANCE_KEYS_ENTRY_POINT_NAME,
         runtime_args! {EVENTS => true, REVERT => true, USER_KEY_MAP => user_map},
     )
@@ -199,7 +199,7 @@ fn should_migrate_1_5_6_to_2_0_0_rc3() {
 
     // even if we minted before migrating, the balance should persist
     assert_eq!(
-        cep18_check_balance_of(&mut builder, &cep18_token, TOKEN_OWNER_ADDRESS_1),
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, TOKEN_OWNER_ADDRESS_1),
         U256::from(TOKEN_OWNER_AMOUNT_1 * 2),
     );
 }
