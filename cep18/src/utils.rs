@@ -28,8 +28,9 @@ use crate::{
 pub(crate) fn get_uref(name: &str) -> URef {
     let key = runtime::get_key(name)
         .ok_or(ApiError::MissingKey)
-        .unwrap_or_revert();
-    key.try_into().unwrap_or_revert()
+        .unwrap_or_revert_with(Cep18Error::FailedToGetKey);
+    key.try_into()
+        .unwrap_or_revert_with(Cep18Error::InvalidKeyType)
 }
 
 /// Reads value from a named key.
@@ -38,7 +39,9 @@ where
     T: FromBytes + CLTyped,
 {
     let uref = get_uref(name);
-    let value: T = storage::read(uref).unwrap_or_revert().unwrap_or_revert();
+    let value: T = storage::read(uref)
+        .unwrap_or_revert_with(Cep18Error::UrefNotFound)
+        .unwrap_or_revert_with(Cep18Error::FailedToReadFromStorage);
     value
 }
 
@@ -76,7 +79,9 @@ pub fn get_total_supply_uref() -> URef {
 }
 
 pub(crate) fn read_total_supply_from(uref: URef) -> U256 {
-    storage::read(uref).unwrap_or_revert().unwrap_or_revert()
+    storage::read(uref)
+        .unwrap_or_revert_with(Cep18Error::UrefNotFound)
+        .unwrap_or_revert_with(Cep18Error::FailedToReadFromStorage)
 }
 
 /// Writes a total supply to a specific [`URef`].
@@ -181,7 +186,8 @@ impl FromBytes for SecurityBadge {
 }
 
 pub fn sec_check(allowed_badge_list: Vec<SecurityBadge>) {
-    let caller = get_immediate_caller_address().unwrap_or_revert();
+    let caller = get_immediate_caller_address()
+        .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
     let hash: [u8; 32] = match caller {
         Key::Account(account) => account.0,
         Key::Hash(hash) => hash,
@@ -194,12 +200,12 @@ pub fn sec_check(allowed_badge_list: Vec<SecurityBadge>) {
     };
     let new_style_key_bytes = Key::AddressableEntity(EntityAddr::Account(hash))
         .to_bytes()
-        .unwrap_or_revert();
+        .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes);
     match dictionary_get::<SecurityBadge>(
         get_uref(SECURITY_BADGES),
         &base64::encode(new_style_key_bytes),
     )
-    .unwrap_or_revert()
+    .unwrap_or_revert_with(Cep18Error::FailedToGetDictionaryValue)
     {
         Some(badge) => {
             if !allowed_badge_list.contains(&badge) {
@@ -209,12 +215,12 @@ pub fn sec_check(allowed_badge_list: Vec<SecurityBadge>) {
         None => {
             let old_style_key_bytes = Key::Account(AccountHash::new(hash))
                 .to_bytes()
-                .unwrap_or_revert();
+                .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes);
             match dictionary_get::<SecurityBadge>(
                 get_uref(SECURITY_BADGES),
                 &base64::encode(old_style_key_bytes),
             )
-            .unwrap_or_revert()
+            .unwrap_or_revert_with(Cep18Error::FailedToGetDictionaryValue)
             {
                 Some(badge) => {
                     if !allowed_badge_list.contains(&badge) {
@@ -232,7 +238,10 @@ pub fn change_sec_badge(badge_map: &BTreeMap<Key, SecurityBadge>) {
     for (&user, &badge) in badge_map {
         dictionary_put(
             sec_uref,
-            &base64::encode(user.to_bytes().unwrap_or_revert()),
+            &base64::encode(
+                user.to_bytes()
+                    .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes),
+            ),
             badge,
         )
     }

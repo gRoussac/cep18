@@ -6,6 +6,7 @@ pub const CEP18_TEST_CONTRACT_WASM: &str = "cep18_test_contract.wasm";
 pub const NAME_KEY: &str = "name";
 pub const SYMBOL_KEY: &str = "symbol";
 pub const CEP18_TOKEN_CONTRACT_KEY: &str = "cep18_contract_hash_CasperTest";
+pub const CEP18_TOKEN_CONTRACT_VERSION_KEY: &str = "cep18_contract_version_CasperTest";
 pub const DECIMALS_KEY: &str = "decimals";
 pub const TOTAL_SUPPLY_KEY: &str = "total_supply";
 pub const BALANCES_KEY: &str = "balances";

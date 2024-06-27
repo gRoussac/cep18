@@ -50,8 +50,7 @@ use constants::{
 };
 pub use error::Cep18Error;
 use events::{
-    init_events, AllowanceMigration, BalanceMigration, Burn, ChangeSecurity, DecreaseAllowance,
-    Event, IncreaseAllowance, Mint, SetAllowance, Transfer, TransferFrom,
+    init_events, AllowanceMigration, BalanceMigration, Burn, ChangeEventsMode, ChangeSecurity, DecreaseAllowance, Event, IncreaseAllowance, Mint, SetAllowance, Transfer, TransferFrom
 };
 use modalities::EventsMode;
 use utils::{
@@ -61,22 +60,34 @@ use utils::{
 
 #[no_mangle]
 pub extern "C" fn name() {
-    runtime::ret(CLValue::from_t(utils::read_from::<String>(NAME)).unwrap_or_revert());
+    runtime::ret(
+        CLValue::from_t(utils::read_from::<String>(NAME))
+            .unwrap_or_revert_with(Cep18Error::FailedToReturnEntryPointResult),
+    );
 }
 
 #[no_mangle]
 pub extern "C" fn symbol() {
-    runtime::ret(CLValue::from_t(utils::read_from::<String>(SYMBOL)).unwrap_or_revert());
+    runtime::ret(
+        CLValue::from_t(utils::read_from::<String>(SYMBOL))
+            .unwrap_or_revert_with(Cep18Error::FailedToReturnEntryPointResult),
+    );
 }
 
 #[no_mangle]
 pub extern "C" fn decimals() {
-    runtime::ret(CLValue::from_t(utils::read_from::<u8>(DECIMALS)).unwrap_or_revert());
+    runtime::ret(
+        CLValue::from_t(utils::read_from::<u8>(DECIMALS))
+            .unwrap_or_revert_with(Cep18Error::FailedToReturnEntryPointResult),
+    );
 }
 
 #[no_mangle]
 pub extern "C" fn total_supply() {
-    runtime::ret(CLValue::from_t(utils::read_from::<U256>(TOTAL_SUPPLY)).unwrap_or_revert());
+    runtime::ret(
+        CLValue::from_t(utils::read_from::<U256>(TOTAL_SUPPLY))
+            .unwrap_or_revert_with(Cep18Error::FailedToReturnEntryPointResult),
+    );
 }
 
 #[no_mangle]
@@ -84,7 +95,9 @@ pub extern "C" fn balance_of() {
     let address: Key = runtime::get_named_arg(ADDRESS);
     let balances_uref = get_balances_uref();
     let balance = balances::read_balance_from(balances_uref, address);
-    runtime::ret(CLValue::from_t(balance).unwrap_or_revert());
+    runtime::ret(
+        CLValue::from_t(balance).unwrap_or_revert_with(Cep18Error::FailedToReturnEntryPointResult),
+    );
 }
 
 #[no_mangle]
@@ -93,12 +106,15 @@ pub extern "C" fn allowance() {
     let owner: Key = runtime::get_named_arg(OWNER);
     let allowances_uref = get_allowances_uref();
     let val: U256 = read_allowance_from(allowances_uref, owner, spender);
-    runtime::ret(CLValue::from_t(val).unwrap_or_revert());
+    runtime::ret(
+        CLValue::from_t(val).unwrap_or_revert_with(Cep18Error::FailedToReturnEntryPointResult),
+    );
 }
 
 #[no_mangle]
 pub extern "C" fn approve() {
-    let owner = utils::get_immediate_caller_address().unwrap_or_revert();
+    let owner = utils::get_immediate_caller_address()
+        .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
     let spender: Key = runtime::get_named_arg(SPENDER);
     if spender == owner {
         revert(Cep18Error::CannotTargetSelfUser);
@@ -115,7 +131,8 @@ pub extern "C" fn approve() {
 
 #[no_mangle]
 pub extern "C" fn decrease_allowance() {
-    let owner = utils::get_immediate_caller_address().unwrap_or_revert();
+    let owner = utils::get_immediate_caller_address()
+        .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
     let spender: Key = runtime::get_named_arg(SPENDER);
     if spender == owner {
         revert(Cep18Error::CannotTargetSelfUser);
@@ -135,7 +152,8 @@ pub extern "C" fn decrease_allowance() {
 
 #[no_mangle]
 pub extern "C" fn increase_allowance() {
-    let owner = utils::get_immediate_caller_address().unwrap_or_revert();
+    let owner = utils::get_immediate_caller_address()
+        .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
     let spender: Key = runtime::get_named_arg(SPENDER);
     if spender == owner {
         revert(Cep18Error::CannotTargetSelfUser);
@@ -155,7 +173,8 @@ pub extern "C" fn increase_allowance() {
 
 #[no_mangle]
 pub extern "C" fn transfer() {
-    let sender = utils::get_immediate_caller_address().unwrap_or_revert();
+    let sender = utils::get_immediate_caller_address()
+        .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
     let recipient: Key = runtime::get_named_arg(RECIPIENT);
     if sender == recipient {
         revert(Cep18Error::CannotTargetSelfUser);
@@ -172,7 +191,8 @@ pub extern "C" fn transfer() {
 
 #[no_mangle]
 pub extern "C" fn transfer_from() {
-    let spender = utils::get_immediate_caller_address().unwrap_or_revert();
+    let spender = utils::get_immediate_caller_address()
+        .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
     let recipient: Key = runtime::get_named_arg(RECIPIENT);
     let owner: Key = runtime::get_named_arg(OWNER);
     if owner == recipient {
@@ -187,8 +207,7 @@ pub extern "C" fn transfer_from() {
     let spender_allowance: U256 = read_allowance_from(allowances_uref, owner, spender);
     let new_spender_allowance = spender_allowance
         .checked_sub(amount)
-        .ok_or(Cep18Error::InsufficientAllowance)
-        .unwrap_or_revert();
+        .unwrap_or_revert_with(Cep18Error::InsufficientAllowance);
 
     transfer_balance(owner, recipient, amount).unwrap_or_revert();
     write_allowance_to(allowances_uref, owner, spender, new_spender_allowance);
@@ -217,15 +236,14 @@ pub extern "C" fn mint() {
         let balance = read_balance_from(balances_uref, owner);
         balance
             .checked_add(amount)
-            .ok_or(Cep18Error::Overflow)
-            .unwrap_or_revert()
+            .unwrap_or_revert_with(Cep18Error::Overflow)
     };
     let new_total_supply = {
         let total_supply: U256 = read_total_supply_from(total_supply_uref);
         total_supply
             .checked_add(amount)
             .ok_or(Cep18Error::Overflow)
-            .unwrap_or_revert()
+            .unwrap_or_revert_with(Cep18Error::FailedToChangeTotalSupply)
     };
     write_balance_to(balances_uref, owner, new_balance);
     write_total_supply_to(total_supply_uref, new_total_supply);
@@ -243,7 +261,10 @@ pub extern "C" fn burn() {
 
     let owner: Key = runtime::get_named_arg(OWNER);
 
-    if owner != get_immediate_caller_address().unwrap_or_revert() {
+    if owner
+        != get_immediate_caller_address()
+            .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller)
+    {
         revert(Cep18Error::InvalidBurnTarget);
     }
 
@@ -254,15 +275,14 @@ pub extern "C" fn burn() {
         let balance = read_balance_from(balances_uref, owner);
         balance
             .checked_sub(amount)
-            .ok_or(Cep18Error::InsufficientBalance)
-            .unwrap_or_revert()
+            .unwrap_or_revert_with(Cep18Error::InsufficientBalance)
     };
     let new_total_supply = {
         let total_supply = read_total_supply_from(total_supply_uref);
         total_supply
             .checked_sub(amount)
             .ok_or(Cep18Error::Overflow)
-            .unwrap_or_revert()
+            .unwrap_or_revert_with(Cep18Error::FailedToChangeTotalSupply)
     };
     write_balance_to(balances_uref, owner, new_balance);
     write_total_supply_to(total_supply_uref, new_total_supply);
@@ -282,8 +302,9 @@ pub extern "C" fn init() {
     let contract_hash = get_named_arg::<Key>(CONTRACT_HASH);
     put_key(CONTRACT_HASH, contract_hash);
 
-    storage::new_dictionary(ALLOWANCES).unwrap_or_revert();
-    let balances_uref = storage::new_dictionary(BALANCES).unwrap_or_revert();
+    storage::new_dictionary(ALLOWANCES).unwrap_or_revert_with(Cep18Error::FailedToCreateDictionary);
+    let balances_uref = storage::new_dictionary(BALANCES)
+        .unwrap_or_revert_with(Cep18Error::FailedToCreateDictionary);
     let initial_supply = runtime::get_named_arg(TOTAL_SUPPLY);
     let caller = get_caller();
     write_balance_to(
@@ -292,13 +313,14 @@ pub extern "C" fn init() {
         initial_supply,
     );
 
-    let security_badges_dict = storage::new_dictionary(SECURITY_BADGES).unwrap_or_revert();
+    let security_badges_dict = storage::new_dictionary(SECURITY_BADGES)
+        .unwrap_or_revert_with(Cep18Error::FailedToCreateDictionary);
     dictionary_put(
         security_badges_dict,
         &base64::encode(
             Key::AddressableEntity(EntityAddr::Account(caller.value()))
                 .to_bytes()
-                .unwrap_or_revert(),
+                .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes),
         ),
         SecurityBadge::Admin,
     );
@@ -308,8 +330,8 @@ pub extern "C" fn init() {
     let minter_list: Option<Vec<Key>> =
         utils::get_optional_named_arg_with_user_errors(MINTER_LIST, Cep18Error::InvalidMinterList);
 
-    let events_mode: EventsMode =
-        EventsMode::try_from(read_from::<u8>(EVENTS_MODE)).unwrap_or_revert();
+    let events_mode: EventsMode = EventsMode::try_from(read_from::<u8>(EVENTS_MODE))
+        .unwrap_or_revert_with(Cep18Error::InvalidEventsMode);
 
     if [EventsMode::CES, EventsMode::NativeNCES].contains(&events_mode) {
         init_events();
@@ -319,7 +341,11 @@ pub extern "C" fn init() {
         for minter in minter_list {
             dictionary_put(
                 security_badges_dict,
-                &base64::encode(minter.to_bytes().unwrap_or_revert()),
+                &base64::encode(
+                    minter
+                        .to_bytes()
+                        .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes),
+                ),
                 SecurityBadge::Minter,
             );
         }
@@ -328,15 +354,20 @@ pub extern "C" fn init() {
         for admin in admin_list {
             dictionary_put(
                 security_badges_dict,
-                &base64::encode(admin.to_bytes().unwrap_or_revert()),
+                &base64::encode(
+                    admin
+                        .to_bytes()
+                        .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes),
+                ),
                 SecurityBadge::Admin,
             );
         }
     }
+
     events::record_event_dictionary(Event::Mint(Mint {
         recipient: Key::AddressableEntity(EntityAddr::Account(caller.value())),
         amount: initial_supply,
-    }))
+    }));
 }
 
 /// Admin EntryPoint to manipulate the security access granted to users.
@@ -375,12 +406,13 @@ pub extern "C" fn change_security() {
         }
     }
 
-    let caller = get_immediate_caller_address().unwrap_or_revert();
+    let caller = get_immediate_caller_address()
+        .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
     badge_map.remove(&caller);
 
     utils::change_sec_badge(&badge_map);
     events::record_event_dictionary(Event::ChangeSecurity(ChangeSecurity {
-        admin: get_immediate_caller_address().unwrap_or_revert(),
+        admin: caller,
         sec_change_map: badge_map,
     }));
 }
@@ -630,14 +662,18 @@ pub fn migrate_sec_keys() {
                 continue;
             }
         };
-        let old_user_sec_key = old_key.to_bytes().unwrap_or_revert();
+        let old_user_sec_key = old_key
+            .to_bytes()
+            .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes);
         let old_encoded_user_sec_key = base64::encode(old_user_sec_key);
 
-        let user_sec_key = migrated_key.to_bytes().unwrap_or_revert();
+        let user_sec_key = migrated_key
+            .to_bytes()
+            .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes);
         let migrated_encoded_user_sec_key = base64::encode(user_sec_key);
 
         let sec: SecurityBadge = named_dictionary_get(SECURITY_BADGES, &old_encoded_user_sec_key)
-            .unwrap_or_revert()
+            .unwrap_or_revert_with(Cep18Error::FailedToGetDictionaryValue)
             .unwrap_or(SecurityBadge::None);
         if ![SecurityBadge::Admin, SecurityBadge::Minter].contains(&sec) {
             named_dictionary_put(SECURITY_BADGES, &migrated_encoded_user_sec_key, sec);
@@ -660,58 +696,74 @@ pub fn migrate_sec_keys() {
 #[no_mangle]
 fn change_events_mode() {
     sec_check(vec![SecurityBadge::Admin]);
-    let events_mode: EventsMode =
-        EventsMode::try_from(read_from::<u8>(EVENTS_MODE)).unwrap_or_revert();
+    let events_mode: EventsMode = EventsMode::try_from(get_named_arg::<u8>(EVENTS_MODE))
+        .unwrap_or_revert_with(Cep18Error::InvalidEventsMode);
 
+    let events_mode_u8 = events_mode as u8;
+    put_key(EVENTS_MODE, storage::new_uref(events_mode_u8).into());
+    
     match events_mode {
         EventsMode::NoEvents => {}
         EventsMode::CES => init_events(),
         EventsMode::Native => {
-            manage_message_topic(EVENTS, MessageTopicOperation::Add).unwrap_or_revert()
-        }
+            let _ = manage_message_topic(EVENTS, MessageTopicOperation::Add);
+        },
         EventsMode::NativeNCES => {
             init_events();
-            manage_message_topic(EVENTS, MessageTopicOperation::Add).unwrap_or_revert()
+            let _ = manage_message_topic(EVENTS, MessageTopicOperation::Add);
         }
-    }
-
-    put_key(EVENTS_MODE, storage::new_uref(events_mode as u8).into());
+    };
+    events::record_event_dictionary(Event::ChangeEventsMode(ChangeEventsMode {events_mode: events_mode_u8}));
 }
 
 pub fn upgrade(name: &str) {
     let entry_points = generate_entry_points();
 
-    let old_contract_package_hash =
-        match runtime::get_key(&format!("{HASH_KEY_NAME_PREFIX}{name}")).unwrap_or_revert() {
-            Key::Hash(contract_hash) => contract_hash,
-            Key::AddressableEntity(EntityAddr::SmartContract(contract_hash)) => contract_hash,
-            Key::Package(package_hash) => package_hash,
-            _ => revert(Cep18Error::MissingPackageHashForUpgrade),
-        };
+    let old_contract_package_hash = match runtime::get_key(&format!("{HASH_KEY_NAME_PREFIX}{name}"))
+        .unwrap_or_revert_with(Cep18Error::FailedToGetKey)
+    {
+        Key::Hash(contract_hash) => contract_hash,
+        Key::AddressableEntity(EntityAddr::SmartContract(contract_hash)) => contract_hash,
+        Key::Package(package_hash) => package_hash,
+        _ => revert(Cep18Error::MissingPackageHashForUpgrade),
+    };
     let contract_package_hash = PackageHash::new(old_contract_package_hash);
 
-    let previous_contract_hash =
-        match runtime::get_key(&format!("{CONTRACT_NAME_PREFIX}{name}")).unwrap_or_revert() {
-            Key::Hash(contract_hash) => contract_hash,
-            Key::AddressableEntity(EntityAddr::SmartContract(contract_hash)) => contract_hash,
-            _ => revert(Cep18Error::MissingContractHashForUpgrade),
-        };
+    let previous_contract_hash = match runtime::get_key(&format!("{CONTRACT_NAME_PREFIX}{name}"))
+        .unwrap_or_revert_with(Cep18Error::FailedToGetKey)
+    {
+        Key::Hash(contract_hash) => contract_hash,
+        Key::AddressableEntity(EntityAddr::SmartContract(contract_hash)) => contract_hash,
+        _ => revert(Cep18Error::MissingContractHashForUpgrade),
+    };
     let converted_previous_contract_hash = AddressableEntityHash::new(previous_contract_hash);
-
-    let (contract_hash, contract_version) = storage::add_contract_version(
-        contract_package_hash,
-        entry_points,
-        NamedKeys::new(),
-        BTreeMap::new(),
-    );
-
-    storage::disable_contract_version(contract_package_hash, converted_previous_contract_hash)
-        .unwrap_or_revert();
 
     let events_mode = utils::get_optional_named_arg_with_user_errors::<u8>(
         EVENTS_MODE,
         Cep18Error::InvalidEventsMode,
     );
+
+    let mut message_topics = BTreeMap::new();
+
+    if let Some(mode) = events_mode {
+        let events_mode: EventsMode = mode
+            .try_into()
+            .unwrap_or_revert_with(Cep18Error::InvalidEventsMode);
+        if [EventsMode::NativeNCES, EventsMode::Native].contains(&events_mode) {
+            message_topics.insert(EVENTS.to_string(), MessageTopicOperation::Add);
+        }
+    }
+
+    let (contract_hash, contract_version) = storage::add_contract_version(
+        contract_package_hash,
+        entry_points,
+        NamedKeys::new(),
+        message_topics,
+    );
+
+    storage::disable_contract_version(contract_package_hash, converted_previous_contract_hash)
+        .unwrap_or_revert_with(Cep18Error::FailedToDisableContractVersion);
+
     if let Some(events_mode) = events_mode {
         call_contract::<()>(
             contract_hash,
@@ -748,7 +800,8 @@ pub fn install_contract(name: &str) {
         utils::get_optional_named_arg_with_user_errors(EVENTS_MODE, Cep18Error::InvalidEventsMode)
             .unwrap_or(0u8);
 
-    let events_mode: EventsMode = EventsMode::try_from(events_mode_arg).unwrap_or_revert();
+    let events_mode: EventsMode =
+        EventsMode::try_from(events_mode_arg).unwrap_or_revert_with(Cep18Error::InvalidEventsMode);
 
     let admin_list: Option<Vec<Key>> =
         utils::get_optional_named_arg_with_user_errors(ADMIN_LIST, Cep18Error::InvalidAdminList);
@@ -779,7 +832,7 @@ pub fn install_contract(name: &str) {
     );
     let entry_points = generate_entry_points();
 
-    let message_topics = if events_mode == EventsMode::Native {
+    let message_topics = if [EventsMode::Native, EventsMode::NativeNCES].contains(&events_mode) {
         let mut message_topics = BTreeMap::new();
         message_topics.insert(EVENTS.to_string(), MessageTopicOperation::Add);
         Some(message_topics)
@@ -795,7 +848,9 @@ pub fn install_contract(name: &str) {
         Some(format!("{ACCESS_KEY_NAME_PREFIX}{name}")),
         message_topics,
     );
-    let package_hash = runtime::get_key(&hash_key_name).unwrap_or_revert();
+
+    let package_hash =
+        runtime::get_key(&hash_key_name).unwrap_or_revert_with(Cep18Error::FailedToGetKey);
 
     // Store contract_hash and contract_version under the keys CONTRACT_NAME and CONTRACT_VERSION
     runtime::put_key(
@@ -810,12 +865,14 @@ pub fn install_contract(name: &str) {
     let mut init_args = runtime_args! {TOTAL_SUPPLY => total_supply, PACKAGE_HASH => package_hash, CONTRACT_HASH => Key::addressable_entity_key(EntityKindTag::SmartContract, contract_hash)};
 
     if let Some(admin_list) = admin_list {
-        init_args.insert(ADMIN_LIST, admin_list).unwrap_or_revert();
+        init_args
+            .insert(ADMIN_LIST, admin_list)
+            .unwrap_or_revert_with(Cep18Error::FailedToInsertToSecurityList);
     }
     if let Some(minter_list) = minter_list {
         init_args
             .insert(MINTER_LIST, minter_list)
-            .unwrap_or_revert();
+            .unwrap_or_revert_with(Cep18Error::FailedToInsertToSecurityList);
     }
 
     runtime::call_contract::<()>(contract_hash, INIT_ENTRY_POINT_NAME, init_args);

@@ -16,6 +16,9 @@ setup-test: build-contract
 	cp ./target/wasm32-unknown-unknown/release/cep18.wasm tests/wasm
 	cp ./target/wasm32-unknown-unknown/release/cep18_test_contract.wasm tests/wasm
 
+native-test: setup-test
+	cd tests && cargo test --lib should_transfer_account_to_account
+
 test: setup-test
 	cd tests && cargo test --lib
 

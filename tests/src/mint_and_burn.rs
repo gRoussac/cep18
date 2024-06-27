@@ -179,7 +179,7 @@ fn test_should_not_mint_above_limits() {
     let error = builder.get_error().expect("should have error");
     assert!(
         matches!(error, CoreError::Exec(ExecError::Revert(ApiError::User(user_error))) if user_error == ERROR_OVERFLOW),
-        "{:?}",
+        "Should not mint above limits, but instead: {:?}",
         error
     );
 }
