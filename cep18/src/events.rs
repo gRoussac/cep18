@@ -8,22 +8,23 @@ use crate::{
     constants::{EVENTS, EVENTS_MODE},
     modalities::EventsMode,
     utils::{read_from, SecurityBadge},
+    Cep18Error,
 };
 
 use casper_event_standard::{emit, Event, Schemas};
 
 pub fn record_event_dictionary(event: Event) {
-    let events_mode: EventsMode =
-        EventsMode::try_from(read_from::<u8>(EVENTS_MODE)).unwrap_or_revert();
+    let events_mode: EventsMode = EventsMode::try_from(read_from::<u8>(EVENTS_MODE))
+        .unwrap_or_revert_with(Cep18Error::InvalidEventsMode);
 
     match events_mode {
         EventsMode::NoEvents => {}
         EventsMode::CES => ces(event),
-        EventsMode::Native => {
-            runtime::emit_message(EVENTS, &format!("{event:?}").into()).unwrap_or_revert()
-        }
+        EventsMode::Native => runtime::emit_message(EVENTS, &format!("{event:?}").into())
+            .unwrap_or_revert_with(Cep18Error::FailedToWriteMessage),
         EventsMode::NativeNCES => {
-            runtime::emit_message(EVENTS, &format!("{event:?}").into()).unwrap_or_revert();
+            runtime::emit_message(EVENTS, &format!("{event:?}").into())
+                .unwrap_or_revert_with(Cep18Error::FailedToWriteMessage);
             ces(event);
         }
     }
@@ -41,6 +42,7 @@ pub enum Event {
     ChangeSecurity(ChangeSecurity),
     BalanceMigration(BalanceMigration),
     AllowanceMigration(AllowanceMigration),
+    ChangeEventsMode(ChangeEventsMode)
 }
 
 #[derive(Event, Debug, PartialEq, Eq)]
@@ -118,6 +120,11 @@ pub struct AllowanceMigration {
     pub failure_map: BTreeMap<(Key, Option<Key>), String>,
 }
 
+#[derive(Event, Debug, PartialEq, Eq)]
+pub struct ChangeEventsMode {
+    pub events_mode: u8,
+}
+
 fn ces(event: Event) {
     match event {
         Event::Mint(ev) => emit(ev),
@@ -130,14 +137,15 @@ fn ces(event: Event) {
         Event::ChangeSecurity(ev) => emit(ev),
         Event::BalanceMigration(ev) => emit(ev),
         Event::AllowanceMigration(ev) => emit(ev),
+        Event::ChangeEventsMode(ev) => emit(ev),
     }
 }
 
 pub fn init_events() {
-    let events_mode: EventsMode =
-        EventsMode::try_from(read_from::<u8>(EVENTS_MODE)).unwrap_or_revert();
+    let events_mode: EventsMode = EventsMode::try_from(read_from::<u8>(EVENTS_MODE))
+        .unwrap_or_revert_with(Cep18Error::InvalidEventsMode);
 
-    if events_mode == EventsMode::CES {
+    if [EventsMode::CES, EventsMode::NativeNCES].contains(&events_mode) {
         let schemas = Schemas::new()
             .with::<Mint>()
             .with::<Burn>()
@@ -148,7 +156,8 @@ pub fn init_events() {
             .with::<TransferFrom>()
             .with::<ChangeSecurity>()
             .with::<BalanceMigration>()
-            .with::<AllowanceMigration>();
+            .with::<AllowanceMigration>()
+            .with::<ChangeEventsMode>();
         casper_event_standard::init(schemas);
     }
 }

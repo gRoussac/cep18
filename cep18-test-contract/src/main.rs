@@ -15,8 +15,8 @@ use casper_contract::{
 };
 
 use casper_types::{
-    bytesrepr::ToBytes, runtime_args, AddressableEntityHash, CLTyped, EntryPoint, EntryPointAccess,
-    EntryPointType, EntryPoints, Key, Parameter, RuntimeArgs, U256,
+    bytesrepr::ToBytes, runtime_args, AddressableEntityHash, ApiError, CLTyped, EntryPoint,
+    EntryPointAccess, EntryPointType, EntryPoints, Key, Parameter, RuntimeArgs, U256,
 };
 
 const CHECK_TOTAL_SUPPLY_ENTRY_POINT_NAME: &str = "check_total_supply";
@@ -57,7 +57,7 @@ extern "C" fn check_total_supply() {
     let token_contract: AddressableEntityHash =
         runtime::get_named_arg::<Key>(TOKEN_CONTRACT_RUNTIME_ARG_NAME)
             .into_entity_hash()
-            .unwrap_or_revert();
+            .unwrap_or_revert_with(ApiError::User(61000));
     let total_supply: U256 = runtime::call_contract(
         token_contract,
         TOTAL_SUPPLY_ENTRY_POINT_NAME,
@@ -71,7 +71,7 @@ extern "C" fn check_balance_of() {
     let token_contract: AddressableEntityHash =
         runtime::get_named_arg::<Key>(TOKEN_CONTRACT_RUNTIME_ARG_NAME)
             .into_entity_hash()
-            .unwrap_or_revert();
+            .unwrap_or_revert_with(ApiError::User(61001));
     let address: Key = runtime::get_named_arg(ADDRESS_RUNTIME_ARG_NAME);
 
     let balance_args = runtime_args! {
@@ -88,7 +88,7 @@ extern "C" fn check_allowance_of() {
     let token_contract: AddressableEntityHash =
         runtime::get_named_arg::<Key>(TOKEN_CONTRACT_RUNTIME_ARG_NAME)
             .into_entity_hash()
-            .unwrap_or_revert();
+            .unwrap_or_revert_with(ApiError::User(61002));
     let owner: Key = runtime::get_named_arg(OWNER_RUNTIME_ARG_NAME);
     let spender: Key = runtime::get_named_arg(SPENDER_RUNTIME_ARG_NAME);
 
@@ -107,7 +107,7 @@ extern "C" fn transfer_as_stored_contract() {
     let token_contract: AddressableEntityHash =
         runtime::get_named_arg::<Key>(TOKEN_CONTRACT_RUNTIME_ARG_NAME)
             .into_entity_hash()
-            .unwrap_or_revert();
+            .unwrap_or_revert_with(ApiError::User(61003));
     let recipient: Key = runtime::get_named_arg(RECIPIENT_RUNTIME_ARG_NAME);
     let amount: U256 = runtime::get_named_arg(AMOUNT_RUNTIME_ARG_NAME);
 
@@ -124,7 +124,7 @@ extern "C" fn transfer_from_as_stored_contract() {
     let token_contract: AddressableEntityHash =
         runtime::get_named_arg::<Key>(TOKEN_CONTRACT_RUNTIME_ARG_NAME)
             .into_entity_hash()
-            .unwrap_or_revert();
+            .unwrap_or_revert_with(ApiError::User(61004));
     let owner: Key = runtime::get_named_arg(OWNER_RUNTIME_ARG_NAME);
     let recipient: Key = runtime::get_named_arg(RECIPIENT_RUNTIME_ARG_NAME);
     let amount: U256 = runtime::get_named_arg(AMOUNT_RUNTIME_ARG_NAME);
@@ -147,7 +147,7 @@ extern "C" fn approve_as_stored_contract() {
     let token_contract: AddressableEntityHash =
         runtime::get_named_arg::<Key>(TOKEN_CONTRACT_RUNTIME_ARG_NAME)
             .into_entity_hash()
-            .unwrap_or_revert();
+            .unwrap_or_revert_with(ApiError::User(61005));
     let spender: Key = runtime::get_named_arg(SPENDER_RUNTIME_ARG_NAME);
     let amount: U256 = runtime::get_named_arg(AMOUNT_RUNTIME_ARG_NAME);
 

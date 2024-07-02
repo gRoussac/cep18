@@ -7,7 +7,7 @@ use casper_contract::{
 };
 use casper_types::{bytesrepr::ToBytes, Key, URef, U256};
 
-use crate::{constants::ALLOWANCES, utils};
+use crate::{constants::ALLOWANCES, utils, Cep18Error};
 
 #[inline]
 pub(crate) fn get_allowances_uref() -> URef {
@@ -17,8 +17,16 @@ pub(crate) fn get_allowances_uref() -> URef {
 /// Creates a dictionary item key for an (owner, spender) pair.
 pub(crate) fn make_dictionary_item_key(owner: Key, spender: Key) -> String {
     let mut preimage = Vec::new();
-    preimage.append(&mut owner.to_bytes().unwrap_or_revert());
-    preimage.append(&mut spender.to_bytes().unwrap_or_revert());
+    preimage.append(
+        &mut owner
+            .to_bytes()
+            .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes),
+    );
+    preimage.append(
+        &mut spender
+            .to_bytes()
+            .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes),
+    );
 
     let key_bytes = runtime::blake2b(&preimage);
     hex::encode(key_bytes)
@@ -34,6 +42,6 @@ pub(crate) fn write_allowance_to(allowance_uref: URef, owner: Key, spender: Key,
 pub(crate) fn read_allowance_from(allowances_uref: URef, owner: Key, spender: Key) -> U256 {
     let dictionary_item_key = make_dictionary_item_key(owner, spender);
     storage::dictionary_get(allowances_uref, &dictionary_item_key)
-        .unwrap_or_revert()
+        .unwrap_or_revert_with(Cep18Error::FailedToGetDictionaryValue)
         .unwrap_or_default()
 }

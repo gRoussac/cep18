@@ -3,7 +3,7 @@ use core::convert::TryFrom;
 use crate::Cep18Error;
 
 #[repr(u8)]
-#[derive(PartialEq, Eq, Default)]
+#[derive(PartialEq, Eq, Default, Copy, Clone)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum EventsMode {
     #[default]

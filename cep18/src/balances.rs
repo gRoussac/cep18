@@ -10,7 +10,9 @@ use crate::{constants::BALANCES, error::Cep18Error, utils};
 /// since stringified Keys are too long to be used as dictionary keys.
 #[inline]
 fn make_dictionary_item_key(owner: Key) -> String {
-    let preimage = owner.to_bytes().unwrap_or_revert();
+    let preimage = owner
+        .to_bytes()
+        .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes);
     // NOTE: As for now dictionary item keys are limited to 64 characters only. Instead of using
     // hashing (which will effectively hash a hash) we'll use base64. Preimage is 33 bytes for
     // both used Key variants, and approximated base64-encoded length will be 4 * (33 / 3) ~ 44
@@ -38,7 +40,7 @@ pub(crate) fn read_balance_from(balances_uref: URef, address: Key) -> U256 {
     let dictionary_item_key = make_dictionary_item_key(address);
 
     storage::dictionary_get(balances_uref, &dictionary_item_key)
-        .unwrap_or_revert()
+        .unwrap_or_revert_with(Cep18Error::FailedToGetDictionaryValue)
         .unwrap_or_default()
 }
 
