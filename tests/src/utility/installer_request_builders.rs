@@ -160,8 +160,8 @@ pub(crate) fn get_test_result<T: FromBytes + CLTyped>(
         .contract_hashes()
         .last()
         .expect("should have latest version");
-    let entity_addr = EntityAddr::new_smart_contract(contract_hash.value());
-    builder.get_value(entity_addr, RESULT_KEY)
+    let contract_entity_addr = EntityAddr::new_smart_contract(contract_hash.value());
+    builder.get_value(contract_entity_addr, RESULT_KEY)
 }
 
 pub(crate) fn cep18_check_balance_of(
@@ -426,7 +426,10 @@ pub(crate) fn test_approve_for(
     owner: Key,
     spender: Key,
 ) {
-    let TestContext { cep18_contract_hash, .. } = test_context;
+    let TestContext {
+        cep18_contract_hash,
+        ..
+    } = test_context;
     let initial_supply = U256::from(TOKEN_TOTAL_SUPPLY);
     let allowance_amount_1 = U256::from(ALLOWANCE_AMOUNT_1);
     let allowance_amount_2 = U256::from(ALLOWANCE_AMOUNT_2);
