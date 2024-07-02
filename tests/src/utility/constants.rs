@@ -1,5 +1,4 @@
-use casper_types::{account::AccountHash, EntityAddr, Key, PublicKey, SecretKey};
-use once_cell::sync::Lazy;
+use casper_types::{account::AccountHash, EntityAddr, Key};
 
 pub const CEP18_CONTRACT_WASM: &str = "cep18.wasm";
 pub const CEP18_TEST_CONTRACT_WASM: &str = "cep18_test_contract.wasm";
@@ -46,22 +45,6 @@ pub const ARG_TOKEN_CONTRACT: &str = "token_contract";
 pub const ARG_ADDRESS: &str = "address";
 pub const RESULT_KEY: &str = "result";
 pub const CEP18_TEST_CONTRACT_KEY: &str = "cep18_test_contract";
-
-pub static ACCOUNT_1_SECRET_KEY: Lazy<SecretKey> =
-    Lazy::new(|| SecretKey::secp256k1_from_bytes([221u8; 32]).unwrap());
-pub static ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
-    Lazy::new(|| PublicKey::from(&*ACCOUNT_1_SECRET_KEY));
-pub static ACCOUNT_1_ADDR: Lazy<AccountHash> = Lazy::new(|| ACCOUNT_1_PUBLIC_KEY.to_account_hash());
-pub static _ACCOUNT_1_ENTITY_ADDR_KEY: Lazy<Key> =
-    Lazy::new(|| Key::AddressableEntity(EntityAddr::Account(ACCOUNT_1_ADDR.value())));
-
-pub static ACCOUNT_2_SECRET_KEY: Lazy<SecretKey> =
-    Lazy::new(|| SecretKey::secp256k1_from_bytes([212u8; 32]).unwrap());
-pub static ACCOUNT_2_PUBLIC_KEY: Lazy<PublicKey> =
-    Lazy::new(|| PublicKey::from(&*ACCOUNT_2_SECRET_KEY));
-pub static ACCOUNT_2_ADDR: Lazy<AccountHash> = Lazy::new(|| ACCOUNT_2_PUBLIC_KEY.to_account_hash());
-pub static _ACCOUNT_2_ENTITY_ADDR_KEY: Lazy<Key> =
-    Lazy::new(|| Key::AddressableEntity(EntityAddr::Account(ACCOUNT_2_ADDR.value())));
 
 pub const TRANSFER_AMOUNT_1: u64 = 200_001;
 pub const TRANSFER_AMOUNT_2: u64 = 19_999;

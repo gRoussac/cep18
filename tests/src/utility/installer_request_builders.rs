@@ -1,11 +1,10 @@
 use casper_engine_test_support::{
     utils::create_run_genesis_request, ExecuteRequest, ExecuteRequestBuilder, LmdbWasmTestBuilder,
-    DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_PUBLIC_KEY,
+    DEFAULT_ACCOUNTS, DEFAULT_ACCOUNT_ADDR,
 };
 use casper_types::{
     account::AccountHash, addressable_entity::EntityKindTag, bytesrepr::FromBytes, runtime_args,
-    AddressableEntityHash, CLTyped, EntityAddr, GenesisAccount, Key, Motes, PackageHash,
-    RuntimeArgs, U256, U512,
+    AddressableEntityHash, CLTyped, EntityAddr, Key, PackageHash, PublicKey, RuntimeArgs, U256,
 };
 
 use crate::utility::constants::{
@@ -13,13 +12,12 @@ use crate::utility::constants::{
 };
 
 use super::constants::{
-    ACCOUNT_1_PUBLIC_KEY, ACCOUNT_2_PUBLIC_KEY, ARG_ADDRESS, ARG_AMOUNT, ARG_DECIMALS, ARG_NAME,
-    ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER, ARG_SYMBOL, ARG_TOKEN_CONTRACT, ARG_TOTAL_SUPPLY,
-    CEP18_CONTRACT_WASM, CEP18_TEST_CONTRACT_KEY, CEP18_TEST_CONTRACT_WASM,
-    CEP18_TOKEN_CONTRACT_KEY, CHECK_ALLOWANCE_OF_ENTRYPOINT, CHECK_BALANCE_OF_ENTRYPOINT,
-    CHECK_TOTAL_SUPPLY_ENTRYPOINT, EVENTS_MODE, METHOD_APPROVE, METHOD_APPROVE_AS_STORED_CONTRACT,
-    METHOD_TRANSFER, METHOD_TRANSFER_AS_STORED_CONTRACT, RESULT_KEY, TOKEN_DECIMALS, TOKEN_NAME,
-    TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
+    ARG_ADDRESS, ARG_AMOUNT, ARG_DECIMALS, ARG_NAME, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER,
+    ARG_SYMBOL, ARG_TOKEN_CONTRACT, ARG_TOTAL_SUPPLY, CEP18_CONTRACT_WASM, CEP18_TEST_CONTRACT_KEY,
+    CEP18_TEST_CONTRACT_WASM, CEP18_TOKEN_CONTRACT_KEY, CHECK_ALLOWANCE_OF_ENTRYPOINT,
+    CHECK_BALANCE_OF_ENTRYPOINT, CHECK_TOTAL_SUPPLY_ENTRYPOINT, EVENTS_MODE, METHOD_APPROVE,
+    METHOD_APPROVE_AS_STORED_CONTRACT, METHOD_TRANSFER, METHOD_TRANSFER_AS_STORED_CONTRACT,
+    RESULT_KEY, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
 };
 
 /// Converts hash addr of Account into Hash, and Hash into Account
@@ -61,23 +59,9 @@ pub(crate) fn setup() -> (LmdbWasmTestBuilder, TestContext) {
 
 pub(crate) fn setup_with_args(install_args: RuntimeArgs) -> (LmdbWasmTestBuilder, TestContext) {
     let mut builder = LmdbWasmTestBuilder::default();
-    builder.run_genesis(create_run_genesis_request(vec![
-        GenesisAccount::Account {
-            public_key: DEFAULT_ACCOUNT_PUBLIC_KEY.clone(),
-            balance: Motes::new(U512::from(5_000_000_000_000_u64)),
-            validator: None,
-        },
-        GenesisAccount::Account {
-            public_key: ACCOUNT_1_PUBLIC_KEY.clone(),
-            balance: Motes::new(U512::from(5_000_000_000_000_u64)),
-            validator: None,
-        },
-        GenesisAccount::Account {
-            public_key: ACCOUNT_2_PUBLIC_KEY.clone(),
-            balance: Motes::new(U512::from(5_000_000_000_000_u64)),
-            validator: None,
-        },
-    ]));
+    builder
+        .run_genesis(create_run_genesis_request(DEFAULT_ACCOUNTS.to_vec()))
+        .commit();
 
     let install_request_1 =
         ExecuteRequestBuilder::standard(*DEFAULT_ACCOUNT_ADDR, CEP18_CONTRACT_WASM, install_args)
@@ -114,6 +98,31 @@ pub(crate) fn setup_with_args(install_args: RuntimeArgs) -> (LmdbWasmTestBuilder
     };
 
     (builder, test_context)
+}
+
+pub(crate) fn get_test_account(ending_string_index: &str) -> (Key, AccountHash, PublicKey) {
+    let index = ending_string_index
+        .chars()
+        .next_back()
+        .unwrap()
+        .to_digit(10)
+        .unwrap_or_default() as usize;
+
+    let accounts = if let Some(account) = DEFAULT_ACCOUNTS.clone().get(index) {
+        let public_key = account.public_key().clone();
+        let account_hash = public_key.to_account_hash();
+        let entity_addr = Key::AddressableEntity(EntityAddr::Account(account_hash.value()));
+        Some((entity_addr, account_hash, public_key))
+    } else {
+        None
+    };
+
+    match accounts {
+        Some(account) => account,
+        None => {
+            panic!("No account found for index {}", index);
+        }
+    }
 }
 
 pub(crate) fn cep18_check_total_supply(
