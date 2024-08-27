@@ -8,12 +8,25 @@ use casper_types::{
 
 use crate::constants::{
     ADDRESS, ALLOWANCE_ENTRY_POINT_NAME, AMOUNT, APPROVE_ENTRY_POINT_NAME,
-    BALANCE_OF_ENTRY_POINT_NAME, BURN_ENTRY_POINT_NAME, CHANGE_SECURITY_ENTRY_POINT_NAME,
-    DECIMALS_ENTRY_POINT_NAME, DECREASE_ALLOWANCE_ENTRY_POINT_NAME,
-    INCREASE_ALLOWANCE_ENTRY_POINT_NAME, INIT_ENTRY_POINT_NAME, MINT_ENTRY_POINT_NAME,
-    NAME_ENTRY_POINT_NAME, OWNER, RECIPIENT, SPENDER, SYMBOL_ENTRY_POINT_NAME,
-    TOTAL_SUPPLY_ENTRY_POINT_NAME, TRANSFER_ENTRY_POINT_NAME, TRANSFER_FROM_ENTRY_POINT_NAME,
+    BALANCE_OF_ENTRY_POINT_NAME, BURN_ENTRY_POINT_NAME, CHANGE_EVENTS_MODE_ENTRY_POINT_NAME,
+    CHANGE_SECURITY_ENTRY_POINT_NAME, CONDOR, DECIMALS_ENTRY_POINT_NAME,
+    DECREASE_ALLOWANCE_ENTRY_POINT_NAME, EVENTS_MODE, INCREASE_ALLOWANCE_ENTRY_POINT_NAME,
+    INIT_ENTRY_POINT_NAME, MINT_ENTRY_POINT_NAME, NAME_ENTRY_POINT_NAME, OWNER, RECIPIENT, SPENDER,
+    SYMBOL_ENTRY_POINT_NAME, TOTAL_SUPPLY_ENTRY_POINT_NAME, TRANSFER_ENTRY_POINT_NAME,
+    TRANSFER_FROM_ENTRY_POINT_NAME,
 };
+
+/// Returns the `condor` entry point.
+pub fn condor() -> EntryPoint {
+    EntryPoint::new(
+        String::from(CONDOR),
+        Vec::new(),
+        String::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
+    )
+}
 
 /// Returns the `name` entry point.
 pub fn name() -> EntryPoint {
@@ -22,7 +35,8 @@ pub fn name() -> EntryPoint {
         Vec::new(),
         String::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -33,7 +47,8 @@ pub fn symbol() -> EntryPoint {
         Vec::new(),
         String::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -48,7 +63,8 @@ pub fn transfer_from() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -62,7 +78,8 @@ pub fn allowance() -> EntryPoint {
         ],
         U256::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -76,7 +93,8 @@ pub fn approve() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -90,7 +108,8 @@ pub fn increase_allowance() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -104,7 +123,8 @@ pub fn decrease_allowance() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -118,7 +138,8 @@ pub fn transfer() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -129,7 +150,8 @@ pub fn balance_of() -> EntryPoint {
         vec![Parameter::new(ADDRESS, Key::cl_type())],
         U256::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -140,7 +162,8 @@ pub fn total_supply() -> EntryPoint {
         Vec::new(),
         U256::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -151,7 +174,8 @@ pub fn decimals() -> EntryPoint {
         Vec::new(),
         u8::cl_type(),
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -165,7 +189,8 @@ pub fn burn() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -179,7 +204,20 @@ pub fn mint() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
+    )
+}
+
+/// Returns the `change_events_mode` entry point.
+pub fn change_events_mode() -> EntryPoint {
+    EntryPoint::new(
+        String::from(CHANGE_EVENTS_MODE_ENTRY_POINT_NAME),
+        vec![Parameter::new(EVENTS_MODE, u8::cl_type())],
+        CLType::Unit,
+        EntryPointAccess::Public,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -199,7 +237,8 @@ pub fn change_security() -> EntryPoint {
         ],
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -210,7 +249,8 @@ pub fn init() -> EntryPoint {
         Vec::new(),
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Contract,
+        EntryPointType::Called,
+        casper_types::EntryPointPayment::Caller,
     )
 }
 
@@ -219,6 +259,7 @@ pub fn generate_entry_points() -> EntryPoints {
     let mut entry_points = EntryPoints::new();
     entry_points.add_entry_point(init());
     entry_points.add_entry_point(name());
+    entry_points.add_entry_point(condor());
     entry_points.add_entry_point(symbol());
     entry_points.add_entry_point(decimals());
     entry_points.add_entry_point(total_supply());
@@ -232,5 +273,6 @@ pub fn generate_entry_points() -> EntryPoints {
     entry_points.add_entry_point(change_security());
     entry_points.add_entry_point(burn());
     entry_points.add_entry_point(mint());
+    entry_points.add_entry_point(change_events_mode());
     entry_points
 }

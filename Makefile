@@ -1,4 +1,4 @@
-PINNED_TOOLCHAIN := $(shell cat rust-toolchain)
+PINNED_TOOLCHAIN := $(shell cat cep18/rust-toolchain)
 
 prepare:
 	rustup target add wasm32-unknown-unknown
@@ -18,13 +18,21 @@ setup-test: build-contract
 	cp ./target/wasm32-unknown-unknown/release/cep18.wasm tests/wasm
 	cp ./target/wasm32-unknown-unknown/release/cep18_test_contract.wasm tests/wasm
 
+native-test: setup-test
+	cd tests && cargo test --lib should_transfer_account_to_account
+
 test: setup-test
-	cd tests && cargo test
+	cd tests && cargo test --lib
 
 clippy:
 	cd cep18 && cargo clippy --all-targets -- -D warnings
 	cd cep18-test-contract && cargo clippy --all-targets -- -D warnings
 	cd tests && cargo clippy --all-targets -- -D warnings
+
+format:
+	cd cep18 && cargo fmt
+	cd cep18-test-contract && cargo fmt
+	cd tests && cargo fmt
 
 check-lint: clippy
 	cd cep18 && cargo fmt -- --check
