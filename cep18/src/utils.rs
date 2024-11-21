@@ -1,7 +1,10 @@
 //! Implementation details.
-use core::convert::TryInto;
-
-use alloc::{collections::BTreeMap, vec, vec::Vec};
+use crate::{
+    constants::{SECURITY_BADGES, TOTAL_SUPPLY},
+    error::Cep18Error,
+};
+use alloc::{collections::BTreeMap, string::String, vec, vec::Vec};
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use casper_contract::{
     contract_api::{
         self,
@@ -17,11 +20,7 @@ use casper_types::{
     system::CallStackElement,
     ApiError, CLTyped, Key, URef, U256,
 };
-
-use crate::{
-    constants::{SECURITY_BADGES, TOTAL_SUPPLY},
-    error::Cep18Error,
-};
+use core::convert::TryInto;
 
 /// Gets [`URef`] under a name.
 pub(crate) fn get_uref(name: &str) -> URef {
@@ -188,7 +187,7 @@ pub fn sec_check(allowed_badge_list: Vec<SecurityBadge>) {
         .to_bytes()
         .unwrap_or_revert();
     if !allowed_badge_list.contains(
-        &dictionary_get::<SecurityBadge>(get_uref(SECURITY_BADGES), &base64::encode(caller))
+        &dictionary_get::<SecurityBadge>(get_uref(SECURITY_BADGES), &base64_encode(caller))
             .unwrap_or_revert()
             .unwrap_or_revert_with(Cep18Error::InsufficientRights),
     ) {
@@ -201,8 +200,12 @@ pub fn change_sec_badge(badge_map: &BTreeMap<Key, SecurityBadge>) {
     for (&user, &badge) in badge_map {
         dictionary_put(
             sec_uref,
-            &base64::encode(user.to_bytes().unwrap_or_revert()),
+            &base64_encode(user.to_bytes().unwrap_or_revert()),
             badge,
         )
     }
+}
+
+pub fn base64_encode(data: Vec<u8>) -> String {
+    STANDARD.encode(&data)
 }
