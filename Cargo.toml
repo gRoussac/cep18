@@ -1,14 +1,6 @@
 [workspace]
-members = [
-    "cep18",
-    "cep18-test-contract",
-    "tests",
-]
-default-members = [
-    "cep18",
-    "cep18-test-contract",
-    "tests",
-]
+members = ["contract", "test-contract", "tests"]
+default-members = ["contract", "test-contract", "tests"]
 
 [profile.release]
 codegen-units = 1

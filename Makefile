@@ -21,22 +21,22 @@ test: setup-test
 	cd tests && cargo test
 
 clippy:
-	cd cep18 && cargo clippy --all-targets -- -D warnings
-	cd cep18-test-contract && cargo clippy --all-targets -- -D warnings
+	cd contract && cargo clippy --all-targets -- -D warnings
+	cd test-contract && cargo clippy --all-targets -- -D warnings
 	cd tests && cargo clippy --all-targets -- -D warnings
 
 check-lint: clippy
-	cd cep18 && cargo fmt -- --check
-	cd cep18-test-contract && cargo fmt -- --check
+	cd contract && cargo fmt -- --check
+	cd test-contract && cargo fmt -- --check
 	cd tests && cargo fmt -- --check
 
 lint: clippy
-	cd cep18 && cargo fmt
-	cd cep18-test-contract && cargo fmt
+	cd contract && cargo fmt
+	cd test-contract && cargo fmt
 	cd tests && cargo fmt
 
 clean:
-	cd cep18 && cargo clean
-	cd cep18-test-contract && cargo clean
+	cd contract && cargo clean
+	cd test-contract && cargo clean
 	cd tests && cargo clean
 	rm -rf tests/wasm
