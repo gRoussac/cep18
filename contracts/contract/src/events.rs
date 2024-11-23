@@ -1,7 +1,7 @@
 use crate::security::SecurityBadge;
 #[cfg(feature = "contract-support")]
 use crate::{constants::ARG_EVENTS_MODE, modalities::EventsMode, utils::get_stored_value};
-use alloc::collections::BTreeMap;
+use alloc::{collections::BTreeMap, string::String};
 #[cfg(feature = "contract-support")]
 use casper_contract::unwrap_or_revert::UnwrapOrRevert;
 use casper_event_standard::Event;
@@ -20,6 +20,7 @@ pub enum Event {
     Transfer(Transfer),
     TransferFrom(TransferFrom),
     ChangeSecurity(ChangeSecurity),
+    TransferFilter(TransferFilter),
 }
 
 #[cfg(feature = "contract-support")]
@@ -89,6 +90,15 @@ pub struct ChangeSecurity {
     pub sec_change_map: BTreeMap<Key, SecurityBadge>,
 }
 
+/* COWL */
+#[derive(Event, Debug, PartialEq, Eq)]
+pub struct TransferFilter {
+    pub key: Key,
+    pub transfer_filter_contract_package_key: Option<Key>,
+    pub transfer_filter_method: Option<String>,
+}
+/*  */
+
 #[cfg(feature = "contract-support")]
 fn ces(event: Event) {
     match event {
@@ -100,6 +110,7 @@ fn ces(event: Event) {
         Event::Transfer(ev) => emit(ev),
         Event::TransferFrom(ev) => emit(ev),
         Event::ChangeSecurity(ev) => emit(ev),
+        Event::TransferFilter(ev) => emit(ev),
     }
 }
 
@@ -117,6 +128,9 @@ pub fn init_events() {
             .with::<DecreaseAllowance>()
             .with::<Transfer>()
             .with::<TransferFrom>()
+            /* COWL */
+            .with::<TransferFilter>()
+            /*  */
             .with::<ChangeSecurity>();
         casper_event_standard::init(schemas);
     }

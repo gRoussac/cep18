@@ -20,6 +20,7 @@ pub const ENTRY_POINT_INIT: &str = "init";
 pub const ENTRY_POINT_CHANGE_SECURITY: &str = "change_security";
 pub const ENTRY_POINT_INCREASE_ALLOWANCE: &str = "increase_allowance";
 pub const ENTRY_POINT_DECREASE_ALLOWANCE: &str = "decrease_allowance";
+pub const ENTRY_POINT_SET_TRANSFER_FILTER: &str = "set_transfer_filter";
 
 pub const ARG_OPERATOR: &str = "operator";
 pub const ARG_FROM: &str = "from";
@@ -27,7 +28,7 @@ pub const ARG_TO: &str = "to";
 pub const ARG_ID: &str = "id";
 pub const ARG_AMOUNT: &str = "amount";
 pub const ARG_DATA: &str = "data";
-pub const ARG_TRANSFER_FILTER_CONTRACT: &str = "transfer_filter_contract";
+pub const ARG_TRANSFER_FILTER_CONTRACT_PACKAGE: &str = "transfer_filter_contract_package";
 pub const ARG_TRANSFER_FILTER_METHOD: &str = "transfer_filter_method";
 pub const ARG_NAME: &str = "name";
 pub const ARG_SYMBOL: &str = "symbol";

@@ -15,7 +15,9 @@ use alloc::{
 };
 use casper_contract::{
     contract_api::{
-        runtime::{self, call_contract, get_caller, get_key, get_named_arg, put_key, revert},
+        runtime::{
+            self, call_versioned_contract, get_caller, get_key, get_named_arg, put_key, revert,
+        },
         storage::{self, dictionary_put},
     },
     unwrap_or_revert::UnwrapOrRevert,
@@ -31,7 +33,7 @@ use cowl_cep18::{
     balances::{get_balances_uref, read_balance_from, transfer_balance, write_balance_to},
     utils::{
         base64_encode, get_immediate_caller_address, get_optional_named_arg_with_user_errors,
-        get_stored_value, get_total_supply_uref, get_transfer_filter_contract,
+        get_stored_value, get_total_supply_uref, get_transfer_filter_contract_package_hash,
         get_transfer_filter_method, read_total_supply_from, write_total_supply_to,
     },
 };
@@ -40,15 +42,16 @@ use cowl_cep18::{
         ADMIN_LIST, ARG_ADDRESS, ARG_AMOUNT, ARG_DATA, ARG_DECIMALS, ARG_ENABLE_MINT_BURN,
         ARG_EVENTS_MODE, ARG_FROM, ARG_NAME, ARG_OPERATOR, ARG_OWNER, ARG_PACKAGE_HASH,
         ARG_RECIPIENT, ARG_SPENDER, ARG_SYMBOL, ARG_TO, ARG_TOTAL_SUPPLY,
-        ARG_TRANSFER_FILTER_CONTRACT, ARG_TRANSFER_FILTER_METHOD, DICT_ALLOWANCES, DICT_BALANCES,
-        DICT_SECURITY_BADGES, ENTRY_POINT_INIT, MINTER_LIST, NONE_LIST, PREFIX_ACCESS_KEY_NAME,
-        PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME, PREFIX_CONTRACT_VERSION,
+        ARG_TRANSFER_FILTER_CONTRACT_PACKAGE, ARG_TRANSFER_FILTER_METHOD, DICT_ALLOWANCES,
+        DICT_BALANCES, DICT_SECURITY_BADGES, ENTRY_POINT_INIT, MINTER_LIST, NONE_LIST,
+        PREFIX_ACCESS_KEY_NAME, PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME,
+        PREFIX_CONTRACT_VERSION,
     },
     entry_points::generate_entry_points,
     error::Cep18Error,
     events::{
         init_events, record_event_dictionary, Burn, ChangeSecurity, DecreaseAllowance, Event,
-        IncreaseAllowance, Mint, SetAllowance, Transfer, TransferFrom,
+        IncreaseAllowance, Mint, SetAllowance, Transfer, TransferFilter, TransferFrom,
     },
     modalities::TransferFilterContractResult,
     security::{change_sec_badge, sec_check, SecurityBadge},
@@ -329,21 +332,25 @@ pub extern "C" fn init() {
     }));
 
     /* COWL */
-    let transfer_filter_contract_key: Option<Key> =
+    let transfer_filter_contract_package_key: Option<Key> =
         get_optional_named_arg_with_user_errors::<Option<Key>>(
-            ARG_TRANSFER_FILTER_CONTRACT,
+            ARG_TRANSFER_FILTER_CONTRACT_PACKAGE,
             Cep18Error::InvalidTransferFilterContract,
         )
         .unwrap_or_default();
 
-    let transfer_filter_contract: Option<ContractHash> =
-        transfer_filter_contract_key.map(|transfer_filter_contract_key| {
-            ContractHash::from(transfer_filter_contract_key.into_hash().unwrap_or_revert())
+    let transfer_filter_contract_package_hash: Option<ContractPackageHash> =
+        transfer_filter_contract_package_key.map(|transfer_filter_contract_package_key| {
+            ContractPackageHash::from(
+                transfer_filter_contract_package_key
+                    .into_hash()
+                    .unwrap_or_revert(),
+            )
         });
 
     runtime::put_key(
-        ARG_TRANSFER_FILTER_CONTRACT,
-        storage::new_uref(transfer_filter_contract).into(),
+        ARG_TRANSFER_FILTER_CONTRACT_PACKAGE,
+        storage::new_uref(transfer_filter_contract_package_hash).into(),
     );
 
     let transfer_filter_method: Option<String> =
@@ -405,6 +412,7 @@ pub extern "C" fn change_security() {
         sec_change_map: badge_map,
     }));
 }
+
 pub fn upgrade(name: &str) {
     let entry_points = generate_entry_points();
 
@@ -493,8 +501,8 @@ pub fn install_contract(name: &str) {
     );
 
     /* COWL */
-    let transfer_filter_contract_key: Option<Key> = get_optional_named_arg_with_user_errors(
-        ARG_TRANSFER_FILTER_CONTRACT,
+    let transfer_filter_contract_package_key: Option<Key> = get_optional_named_arg_with_user_errors(
+        ARG_TRANSFER_FILTER_CONTRACT_PACKAGE,
         Cep18Error::InvalidTransferFilterContract,
     );
 
@@ -503,7 +511,7 @@ pub fn install_contract(name: &str) {
         Cep18Error::InvalidTransferFilterMethod,
     );
 
-    if let Some(_contract_key) = transfer_filter_contract_key {
+    if let Some(_contract_key) = transfer_filter_contract_package_key {
         if transfer_filter_method.is_none() || transfer_filter_method.as_ref().unwrap().is_empty() {
             revert(Cep18Error::InvalidTransferFilterMethod);
         }
@@ -514,7 +522,7 @@ pub fn install_contract(name: &str) {
         ARG_TOTAL_SUPPLY => total_supply,
         ARG_PACKAGE_HASH => package_hash,
         /* COWL */
-        ARG_TRANSFER_FILTER_CONTRACT => transfer_filter_contract_key,
+        ARG_TRANSFER_FILTER_CONTRACT_PACKAGE => transfer_filter_contract_package_key,
         ARG_TRANSFER_FILTER_METHOD => transfer_filter_method,
         /*  */
     };
@@ -546,7 +554,7 @@ pub extern "C" fn call() {
 
 /* COWL */
 fn before_token_transfer(operator: &Key, from: &Key, to: &Key, amount: U256, data: Option<Bytes>) {
-    if let Some(filter_contract) = get_transfer_filter_contract() {
+    if let Some(filter_contract_package) = get_transfer_filter_contract_package_hash() {
         if let Some(filter_method) = get_transfer_filter_method() {
             if amount == U256::zero() {
                 runtime::revert(Cep18Error::InvalidAmount);
@@ -564,12 +572,59 @@ fn before_token_transfer(operator: &Key, from: &Key, to: &Key, amount: U256, dat
                 .unwrap_or_revert_with(Cep18Error::FailedToCreateArg);
 
             let result: TransferFilterContractResult =
-                call_contract::<u8>(filter_contract, &filter_method, args).into();
+                call_versioned_contract::<u8>(filter_contract_package, None, &filter_method, args)
+                    .into();
 
             if TransferFilterContractResult::DenyTransfer == result {
                 revert(Cep18Error::TransferFilterContractDenied);
             }
         }
     }
+}
+
+#[no_mangle]
+pub extern "C" fn set_transfer_filter() {
+    // Only the installing account can change the mutable variables.
+    sec_check(vec![SecurityBadge::Admin]);
+
+    let caller = get_immediate_caller_address().unwrap_or_revert();
+
+    let maybe_transfer_filter_contract_package_key: Option<Key> =
+        get_named_arg(ARG_TRANSFER_FILTER_CONTRACT_PACKAGE);
+
+    let maybe_transfer_filter_method: Option<String> = get_named_arg(ARG_TRANSFER_FILTER_METHOD);
+
+    let maybe_transfer_filter_contract_package_hash: Option<ContractPackageHash> =
+        maybe_transfer_filter_contract_package_key.map(|transfer_filter_contract_package_key| {
+            ContractPackageHash::from(
+                transfer_filter_contract_package_key
+                    .into_hash()
+                    .unwrap_or_revert(),
+            )
+        });
+
+    runtime::put_key(
+        ARG_TRANSFER_FILTER_CONTRACT_PACKAGE,
+        storage::new_uref(maybe_transfer_filter_contract_package_hash).into(),
+    );
+
+    if maybe_transfer_filter_contract_package_key.is_some() {
+        if maybe_transfer_filter_method.is_some()
+            && maybe_transfer_filter_method.as_ref().unwrap().is_empty()
+        {
+            revert(Cep18Error::InvalidTransferFilterMethod);
+        }
+    }
+
+    runtime::put_key(
+        ARG_TRANSFER_FILTER_METHOD,
+        storage::new_uref(maybe_transfer_filter_method.clone()).into(),
+    );
+
+    record_event_dictionary(Event::TransferFilter(TransferFilter {
+        key: caller,
+        transfer_filter_contract_package_key: maybe_transfer_filter_contract_package_key,
+        transfer_filter_method: maybe_transfer_filter_method,
+    }));
 }
 /*  */

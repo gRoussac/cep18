@@ -1,5 +1,7 @@
 use crate::{
-    constants::{ARG_TOTAL_SUPPLY, ARG_TRANSFER_FILTER_CONTRACT, ARG_TRANSFER_FILTER_METHOD},
+    constants::{
+        ARG_TOTAL_SUPPLY, ARG_TRANSFER_FILTER_CONTRACT_PACKAGE, ARG_TRANSFER_FILTER_METHOD,
+    },
     error::Cep18Error,
 };
 use alloc::{string::String, vec, vec::Vec};
@@ -17,7 +19,7 @@ use casper_types::{
     api_error,
     bytesrepr::{self, FromBytes, ToBytes},
     system::CallStackElement,
-    ApiError, CLTyped, ContractHash, Key, URef, U256,
+    ApiError, CLTyped, ContractPackageHash, Key, URef, U256,
 };
 use core::{convert::TryInto, mem::MaybeUninit};
 
@@ -145,9 +147,9 @@ pub fn base64_encode(data: Vec<u8>) -> String {
     STANDARD.encode(data)
 }
 
-pub fn get_transfer_filter_contract() -> Option<ContractHash> {
+pub fn get_transfer_filter_contract_package_hash() -> Option<ContractPackageHash> {
     get_stored_value_with_user_errors(
-        ARG_TRANSFER_FILTER_CONTRACT,
+        ARG_TRANSFER_FILTER_CONTRACT_PACKAGE,
         Cep18Error::MissingTransferFilterContract,
         Cep18Error::InvalidTransferFilterContract,
     )
