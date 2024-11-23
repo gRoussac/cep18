@@ -4,15 +4,16 @@ prepare:
 	rustup target add wasm32-unknown-unknown
 	rustup component add clippy --toolchain ${PINNED_TOOLCHAIN}
 	rustup component add rustfmt --toolchain ${PINNED_TOOLCHAIN}
+	rustup component add rust-src --toolchain ${PINNED_TOOLCHAIN}
 
 .PHONY:	build-contract
 build-contract:
-	cd contracts &&  cargo build --release --target wasm32-unknown-unknown -p cowl-cep18
+	cd contracts && RUSTFLAGS="-C target-cpu=mvp" cargo build --release --target wasm32-unknown-unknown -Z build-std=std,panic_abort -p cowl-cep18
 	wasm-strip target/wasm32-unknown-unknown/release/cowl_cep18.wasm
 
 .PHONY:	build-all-contracts
 build-all-contracts: build-contract
-	cd contracts &&  cargo build --release --target wasm32-unknown-unknown -p cep18-test-contract
+	cd contracts && RUSTFLAGS="-C target-cpu=mvp" cargo build --release --target wasm32-unknown-unknown -Z build-std=std,panic_abort -p cep18-test-contract
 	wasm-strip target/wasm32-unknown-unknown/release/cep18_test_contract.wasm
 
 setup-test: build-all-contracts
