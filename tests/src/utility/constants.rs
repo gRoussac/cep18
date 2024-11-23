@@ -40,4 +40,4 @@ pub const TOKEN_OWNER_AMOUNT_2: u64 = 2_000_000;
 
 pub const ACCOUNT_USER_1: [u8; 32] = [1u8; 32];
 pub const ACCOUNT_USER_2: [u8; 32] = [2u8; 32];
-/* */
+/*  */

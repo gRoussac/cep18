@@ -142,7 +142,7 @@ pub(crate) fn get_named_arg_with_user_errors<T: FromBytes>(
 
 /* COWL */
 pub fn base64_encode(data: Vec<u8>) -> String {
-    STANDARD.encode(&data)
+    STANDARD.encode(data)
 }
 
 pub fn get_transfer_filter_contract() -> Option<ContractHash> {

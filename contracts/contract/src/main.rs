@@ -5,6 +5,7 @@
 compile_error!("target arch should be wasm32: compile with '--target wasm32-unknown-unknown'");
 
 extern crate alloc;
+
 use alloc::{
     collections::BTreeMap,
     format,
@@ -159,7 +160,7 @@ pub extern "C" fn transfer() {
     /* COWL */
     let data: Option<Bytes> =
         get_optional_named_arg_with_user_errors(ARG_DATA, Cep18Error::InvalidData);
-    before_token_transfer(&sender, &sender, &recipient, amount, data.clone());
+    before_token_transfer(&sender, &sender, &recipient, amount, data);
     /*  */
 
     transfer_balance(sender, recipient, amount).unwrap_or_revert();
@@ -193,7 +194,7 @@ pub extern "C" fn transfer_from() {
     /* COWL */
     let data: Option<Bytes> =
         get_optional_named_arg_with_user_errors(ARG_DATA, Cep18Error::InvalidData);
-    before_token_transfer(&spender, &owner, &recipient, amount, data.clone());
+    before_token_transfer(&spender, &owner, &recipient, amount, data);
     /*  */
 
     transfer_balance(owner, recipient, amount).unwrap_or_revert();

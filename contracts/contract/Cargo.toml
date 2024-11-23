@@ -21,10 +21,9 @@ path = "src/lib.rs"
 [dependencies]
 casper-contract = { version = "4.0.0", optional = true }
 casper-types.workspace = true
-base64 = { version = "0.22.1", default-features = false, features = ["alloc"] }
 hex = { version = "0.4.3", default-features = false }
-once_cell = { version = "1.20.2", default-features = false }
 casper-event-standard = { version = "0.5.0", default-features = false }
+base64 = { version = "0.22.1", default-features = false, features = ["alloc"] }
 
 [features]
 default = ["contract-support"]

@@ -2,7 +2,11 @@
 name = "cep18-test-contract"
 version = "1.2.0"
 authors = ["Michał Papierski <michal@casperlabs.io>"]
-edition = "2018"
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
 
 [[bin]]
 name = "cep18_test_contract"
@@ -13,8 +17,8 @@ test = false
 
 [dependencies]
 cowl-cep18 = { path = "../contract", default-features = false }
-casper-contract = { version = "4.0.0", optional = true, default-features = false }
+casper-contract = { version = "4.0.0", default-features = false }
 casper-types.workspace = true
 
 [features]
-default = ["cowl-cep18/contract-support", "casper-contract/no-std-helpers"]
+default = ["cowl-cep18/contract-support"]

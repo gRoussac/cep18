@@ -1,4 +1,4 @@
-PINNED_TOOLCHAIN := $(shell cat rust-toolchain)
+PINNED_TOOLCHAIN := $(shell cat contracts/rust-toolchain)
 
 prepare:
 	rustup target add wasm32-unknown-unknown
@@ -24,18 +24,20 @@ test: setup-test
 	cd tests && cargo test
 
 clippy:
-	cd contracts && cargo clippy --all-targets -- -D warnings
+	cd contracts && cargo clippy --bins --target wasm32-unknown-unknown -- -D warnings
+	cd contracts && cargo clippy --lib --target wasm32-unknown-unknown -- -D warnings
+	cd contracts && cargo clippy --lib --target wasm32-unknown-unknown --no-default-features -- -D warnings
 	cd tests && cargo clippy --all-targets -- -D warnings
 
 check-lint: clippy
 	cd contracts && cargo fmt -- --check
-	cd tests && cargo fmt -- --check
+	cd tests && cargo +$(PINNED_TOOLCHAIN) fmt -- --check
 
-lint: clippy
+format:
 	cd contracts && cargo fmt
-	cd tests && cargo fmt
+	cd tests && cargo +$(PINNED_TOOLCHAIN) fmt
 
 clean:
-	cd contracts s&& cargo clean
+	cd contracts && cargo clean
 	cd tests && cargo clean
 	rm -rf tests/wasm
