@@ -7,15 +7,15 @@ use casper_contract::{
 };
 use casper_types::{bytesrepr::ToBytes, Key, URef, U256};
 
-use crate::{constants::ALLOWANCES, utils};
+use crate::{constants::DICT_ALLOWANCES, utils};
 
 #[inline]
-pub(crate) fn get_allowances_uref() -> URef {
-    utils::get_uref(ALLOWANCES)
+pub fn get_allowances_uref() -> URef {
+    utils::get_uref(DICT_ALLOWANCES)
 }
 
 /// Creates a dictionary item key for an (owner, spender) pair.
-pub(crate) fn make_dictionary_item_key(owner: Key, spender: Key) -> String {
+fn make_dictionary_item_key(owner: Key, spender: Key) -> String {
     let mut preimage = Vec::new();
     preimage.append(&mut owner.to_bytes().unwrap_or_revert());
     preimage.append(&mut spender.to_bytes().unwrap_or_revert());
@@ -25,13 +25,13 @@ pub(crate) fn make_dictionary_item_key(owner: Key, spender: Key) -> String {
 }
 
 /// Writes an allowance for owner and spender for a specific amount.
-pub(crate) fn write_allowance_to(allowance_uref: URef, owner: Key, spender: Key, amount: U256) {
+pub fn write_allowance_to(allowance_uref: URef, owner: Key, spender: Key, amount: U256) {
     let dictionary_item_key = make_dictionary_item_key(owner, spender);
     storage::dictionary_put(allowance_uref, &dictionary_item_key, amount)
 }
 
 /// Reads an allowance for a owner and spender
-pub(crate) fn read_allowance_from(allowances_uref: URef, owner: Key, spender: Key) -> U256 {
+pub fn read_allowance_from(allowances_uref: URef, owner: Key, spender: Key) -> U256 {
     let dictionary_item_key = make_dictionary_item_key(owner, spender);
     storage::dictionary_get(allowances_uref, &dictionary_item_key)
         .unwrap_or_revert()

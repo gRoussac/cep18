@@ -1,12 +1,15 @@
 use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
 use casper_types::{runtime_args, ApiError, Key, RuntimeArgs, U256};
+use cep18_test_contract::constants::ARG_TOKEN_CONTRACT;
+use cowl_cep18::constants::{
+    ARG_AMOUNT, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER, ARG_TOTAL_SUPPLY, ENTRY_POINT_APPROVE,
+    ENTRY_POINT_TRANSFER, ENTRY_POINT_TRANSFER_FROM,
+};
 
 use crate::utility::{
     constants::{
-        ACCOUNT_1_ADDR, ACCOUNT_2_ADDR, ALLOWANCE_AMOUNT_1, ARG_AMOUNT, ARG_OWNER, ARG_RECIPIENT,
-        ARG_SPENDER, ARG_TOKEN_CONTRACT, ERROR_INSUFFICIENT_BALANCE, METHOD_APPROVE,
-        METHOD_FROM_AS_STORED_CONTRACT, METHOD_TRANSFER, METHOD_TRANSFER_FROM, TOKEN_TOTAL_SUPPLY,
-        TOTAL_SUPPLY_KEY, TRANSFER_AMOUNT_1,
+        ACCOUNT_1_ADDR, ACCOUNT_2_ADDR, ALLOWANCE_AMOUNT_1,
+        METHOD_TRANSFER_FROM_AS_STORED_CONTRACT, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
     },
     installer_request_builders::{
         cep18_check_allowance_of, cep18_check_balance_of, make_cep18_approve_request,
@@ -45,7 +48,7 @@ fn should_transfer_full_owned_amount() {
     let token_transfer_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         transfer_1_sender,
         cep18_token,
-        METHOD_TRANSFER,
+        ENTRY_POINT_TRANSFER,
         cep18_transfer_1_args,
     )
     .build();
@@ -66,7 +69,7 @@ fn should_transfer_full_owned_amount() {
     );
     assert_eq!(owner_balance_after, U256::zero());
 
-    let total_supply: U256 = builder.get_value(cep18_token, TOTAL_SUPPLY_KEY);
+    let total_supply: U256 = builder.get_value(cep18_token, ARG_TOTAL_SUPPLY);
     assert_eq!(total_supply, initial_supply);
 }
 
@@ -100,7 +103,7 @@ fn should_not_transfer_more_than_owned_balance() {
     let token_transfer_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         transfer_1_sender,
         cep18_token,
-        METHOD_TRANSFER,
+        ENTRY_POINT_TRANSFER,
         cep18_transfer_1_args,
     )
     .build();
@@ -109,7 +112,7 @@ fn should_not_transfer_more_than_owned_balance() {
 
     let error = builder.get_error().expect("should have error");
     assert!(
-        matches!(error, CoreError::Exec(ExecError::Revert(ApiError::User(user_error))) if user_error == ERROR_INSUFFICIENT_BALANCE),
+        matches!(error, CoreError::Exec(ExecError::Revert(ApiError::User(user_error))) if user_error == cowl_cep18::error::Cep18Error::InsufficientBalance as u16),
         "{:?}",
         error
     );
@@ -125,7 +128,7 @@ fn should_not_transfer_more_than_owned_balance() {
         cep18_check_balance_of(&mut builder, &cep18_token, Key::Account(transfer_1_sender));
     assert_eq!(owner_balance_after, initial_supply);
 
-    let total_supply: U256 = builder.get_value(cep18_token, TOTAL_SUPPLY_KEY);
+    let total_supply: U256 = builder.get_value(cep18_token, ARG_TOTAL_SUPPLY);
     assert_eq!(total_supply, initial_supply);
 }
 
@@ -158,7 +161,7 @@ fn should_transfer_from_from_account_to_account() {
     let approve_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         owner,
         cep18_token,
-        METHOD_APPROVE,
+        ENTRY_POINT_APPROVE,
         cep18_approve_args,
     )
     .build();
@@ -166,7 +169,7 @@ fn should_transfer_from_from_account_to_account() {
     let transfer_from_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         spender,
         cep18_token,
-        METHOD_TRANSFER_FROM,
+        ENTRY_POINT_TRANSFER_FROM,
         cep18_transfer_from_args,
     )
     .build();
@@ -240,7 +243,7 @@ fn should_transfer_from_account_by_contract() {
     let approve_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
         owner,
         cep18_token,
-        METHOD_APPROVE,
+        ENTRY_POINT_APPROVE,
         cep18_approve_args,
     )
     .build();
@@ -249,7 +252,7 @@ fn should_transfer_from_account_by_contract() {
         *DEFAULT_ACCOUNT_ADDR,
         cep18_test_contract_package,
         None,
-        METHOD_FROM_AS_STORED_CONTRACT,
+        METHOD_TRANSFER_FROM_AS_STORED_CONTRACT,
         cep18_transfer_from_args,
     )
     .build();
@@ -349,7 +352,7 @@ fn should_not_be_able_to_own_transfer_from() {
         ExecuteRequestBuilder::contract_call_by_hash(
             sender.into_account().unwrap(),
             cep18_token,
-            METHOD_TRANSFER_FROM,
+            ENTRY_POINT_TRANSFER_FROM,
             cep18_transfer_from_args,
         )
         .build()
@@ -422,7 +425,7 @@ fn should_verify_zero_amount_transfer_from_is_noop() {
         ExecuteRequestBuilder::contract_call_by_hash(
             owner.into_account().unwrap(),
             cep18_token,
-            METHOD_TRANSFER_FROM,
+            ENTRY_POINT_TRANSFER_FROM,
             cep18_transfer_from_args,
         )
         .build()

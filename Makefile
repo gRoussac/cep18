@@ -7,36 +7,35 @@ prepare:
 
 .PHONY:	build-contract
 build-contract:
-	cargo build --release --target wasm32-unknown-unknown -p cep18
-	cargo build --release --target wasm32-unknown-unknown -p cep18-test-contract
-	wasm-strip target/wasm32-unknown-unknown/release/cep18.wasm
+	cd contracts &&  cargo build --release --target wasm32-unknown-unknown -p cowl-cep18
+	wasm-strip target/wasm32-unknown-unknown/release/cowl_cep18.wasm
+
+.PHONY:	build-all-contracts
+build-all-contracts: build-contract
+	cd contracts &&  cargo build --release --target wasm32-unknown-unknown -p cep18-test-contract
 	wasm-strip target/wasm32-unknown-unknown/release/cep18_test_contract.wasm
 
-setup-test: build-contract
+setup-test: build-all-contracts
 	mkdir -p tests/wasm
-	cp ./target/wasm32-unknown-unknown/release/cep18.wasm tests/wasm
+	cp ./target/wasm32-unknown-unknown/release/cowl_cep18.wasm tests/wasm
 	cp ./target/wasm32-unknown-unknown/release/cep18_test_contract.wasm tests/wasm
 
 test: setup-test
 	cd tests && cargo test
 
 clippy:
-	cd contract && cargo clippy --all-targets -- -D warnings
-	cd test-contract && cargo clippy --all-targets -- -D warnings
+	cd contracts && cargo clippy --all-targets -- -D warnings
 	cd tests && cargo clippy --all-targets -- -D warnings
 
 check-lint: clippy
-	cd contract && cargo fmt -- --check
-	cd test-contract && cargo fmt -- --check
+	cd contracts && cargo fmt -- --check
 	cd tests && cargo fmt -- --check
 
 lint: clippy
-	cd contract && cargo fmt
-	cd test-contract && cargo fmt
+	cd contracts && cargo fmt
 	cd tests && cargo fmt
 
 clean:
-	cd contract && cargo clean
-	cd test-contract && cargo clean
+	cd contracts s&& cargo clean
 	cd tests && cargo clean
 	rm -rf tests/wasm

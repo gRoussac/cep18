@@ -1,26 +1,15 @@
-use core::convert::TryFrom;
-
+use crate::security::SecurityBadge;
+#[cfg(feature = "contract-support")]
+use crate::{constants::ARG_EVENTS_MODE, modalities::EventsMode, utils::get_stored_value};
 use alloc::collections::BTreeMap;
+#[cfg(feature = "contract-support")]
 use casper_contract::unwrap_or_revert::UnwrapOrRevert;
+use casper_event_standard::Event;
+#[cfg(feature = "contract-support")]
+use casper_event_standard::{emit, Schemas};
 use casper_types::{Key, U256};
-
-use crate::{
-    constants::EVENTS_MODE,
-    modalities::EventsMode,
-    utils::{read_from, SecurityBadge},
-};
-
-use casper_event_standard::{emit, Event, Schemas};
-
-pub fn record_event_dictionary(event: Event) {
-    let events_mode: EventsMode =
-        EventsMode::try_from(read_from::<u8>(EVENTS_MODE)).unwrap_or_revert();
-
-    match events_mode {
-        EventsMode::NoEvents => {}
-        EventsMode::CES => ces(event),
-    }
-}
+#[cfg(feature = "contract-support")]
+use core::convert::TryFrom;
 
 pub enum Event {
     Mint(Mint),
@@ -31,6 +20,17 @@ pub enum Event {
     Transfer(Transfer),
     TransferFrom(TransferFrom),
     ChangeSecurity(ChangeSecurity),
+}
+
+#[cfg(feature = "contract-support")]
+pub fn record_event_dictionary(event: Event) {
+    let events_mode: EventsMode =
+        EventsMode::try_from(get_stored_value::<u8>(ARG_EVENTS_MODE)).unwrap_or_revert();
+
+    match events_mode {
+        EventsMode::NoEvents => {}
+        EventsMode::CES => ces(event),
+    }
 }
 
 #[derive(Event, Debug, PartialEq, Eq)]
@@ -89,6 +89,7 @@ pub struct ChangeSecurity {
     pub sec_change_map: BTreeMap<Key, SecurityBadge>,
 }
 
+#[cfg(feature = "contract-support")]
 fn ces(event: Event) {
     match event {
         Event::Mint(ev) => emit(ev),
@@ -102,9 +103,10 @@ fn ces(event: Event) {
     }
 }
 
+#[cfg(feature = "contract-support")]
 pub fn init_events() {
     let events_mode: EventsMode =
-        EventsMode::try_from(read_from::<u8>(EVENTS_MODE)).unwrap_or_revert();
+        EventsMode::try_from(get_stored_value::<u8>(ARG_EVENTS_MODE)).unwrap_or_revert();
 
     if events_mode == EventsMode::CES {
         let schemas = Schemas::new()

@@ -1,12 +1,14 @@
 use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
 use casper_types::{runtime_args, ApiError, Key, RuntimeArgs, U256};
+use cowl_cep18::constants::{
+    ADMIN_LIST, ARG_AMOUNT, ARG_DECIMALS, ARG_ENABLE_MINT_BURN, ARG_NAME, ARG_OWNER, ARG_SYMBOL,
+    ARG_TOTAL_SUPPLY, ENTRY_POINT_BURN, ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_MINT, MINTER_LIST,
+    NONE_LIST,
+};
 
 use crate::utility::{
     constants::{
-        ACCOUNT_1_ADDR, ADMIN_LIST, AMOUNT, ARG_AMOUNT, ARG_DECIMALS, ARG_NAME, ARG_OWNER,
-        ARG_SYMBOL, ARG_TOTAL_SUPPLY, CHANGE_SECURITY, ENABLE_MINT_BURN,
-        ERROR_INSUFFICIENT_BALANCE, ERROR_OVERFLOW, METHOD_BURN, METHOD_MINT, MINTER_LIST,
-        NONE_LIST, OWNER, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_OWNER_ADDRESS_1, TOKEN_OWNER_ADDRESS_2,
+        ACCOUNT_1_ADDR, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_OWNER_ADDRESS_1, TOKEN_OWNER_ADDRESS_2,
         TOKEN_OWNER_AMOUNT_1, TOKEN_OWNER_AMOUNT_2, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
     },
     installer_request_builders::{
@@ -27,21 +29,21 @@ fn test_mint_and_burn_tokens() {
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
         ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-        ENABLE_MINT_BURN => true,
+        ARG_ENABLE_MINT_BURN => true,
     });
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
-        runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
+        ENTRY_POINT_MINT,
+        runtime_args! {ARG_OWNER => TOKEN_OWNER_ADDRESS_1, ARG_AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
     )
     .build();
     builder.exec(mint_request).expect_success().commit();
     let mint_request_2 = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
-        runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_2, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_2)},
+        ENTRY_POINT_MINT,
+        runtime_args! {ARG_OWNER => TOKEN_OWNER_ADDRESS_2, ARG_AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_2)},
     )
     .build();
     builder.exec(mint_request_2).expect_success().commit();
@@ -66,7 +68,7 @@ fn test_mint_and_burn_tokens() {
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
+        ENTRY_POINT_MINT,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
             ARG_AMOUNT => mint_amount,
@@ -95,7 +97,7 @@ fn test_mint_and_burn_tokens() {
     let burn_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_BURN,
+        ENTRY_POINT_BURN,
         runtime_args! {
             ARG_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
             ARG_AMOUNT => mint_amount,
@@ -141,16 +143,16 @@ fn test_should_not_mint_above_limits() {
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
-        runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
+        ENTRY_POINT_MINT,
+        runtime_args! {ARG_OWNER => TOKEN_OWNER_ADDRESS_1, ARG_AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
     )
     .build();
     builder.exec(mint_request).expect_success().commit();
     let mint_request_2 = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
-        runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_2, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_2)},
+        ENTRY_POINT_MINT,
+        runtime_args! {ARG_OWNER => TOKEN_OWNER_ADDRESS_2, ARG_AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_2)},
     )
     .build();
     builder.exec(mint_request_2).expect_success().commit();
@@ -162,7 +164,7 @@ fn test_should_not_mint_above_limits() {
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
+        ENTRY_POINT_MINT,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
             ARG_AMOUNT => mint_amount,
@@ -174,7 +176,7 @@ fn test_should_not_mint_above_limits() {
 
     let error = builder.get_error().expect("should have error");
     assert!(
-        matches!(error, CoreError::Exec(ExecError::Revert(ApiError::User(user_error))) if user_error == ERROR_OVERFLOW),
+        matches!(error, CoreError::Exec(ExecError::Revert(ApiError::User(user_error))) if user_error == cowl_cep18::error::Cep18Error::Overflow as u16),
         "{:?}",
         error
     );
@@ -193,7 +195,7 @@ fn test_should_not_burn_above_balance() {
     let burn_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_BURN,
+        ENTRY_POINT_BURN,
         runtime_args! {
             ARG_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
             ARG_AMOUNT => U256::from(TOKEN_TOTAL_SUPPLY)+1,
@@ -205,7 +207,7 @@ fn test_should_not_burn_above_balance() {
 
     let error = builder.get_error().expect("should have error");
     assert!(
-        matches!(error, CoreError::Exec(ExecError::Revert(ApiError::User(user_error))) if user_error == ERROR_INSUFFICIENT_BALANCE),
+        matches!(error, CoreError::Exec(ExecError::Revert(ApiError::User(user_error))) if user_error == cowl_cep18::error::Cep18Error::InsufficientBalance as u16),
         "{:?}",
         error
     );
@@ -220,13 +222,13 @@ fn test_should_not_mint_or_burn_with_entrypoint_disabled() {
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
         ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-        ENABLE_MINT_BURN => false,
+        ARG_ENABLE_MINT_BURN => false,
     });
 
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
+        ENTRY_POINT_MINT,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
             ARG_AMOUNT => mint_amount,
@@ -246,7 +248,7 @@ fn test_should_not_mint_or_burn_with_entrypoint_disabled() {
     let burn_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_BURN,
+        ENTRY_POINT_BURN,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
             ARG_AMOUNT => mint_amount,
@@ -273,13 +275,13 @@ fn test_security_no_rights() {
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
         ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-        ENABLE_MINT_BURN => true,
+        ARG_ENABLE_MINT_BURN => true,
     });
 
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *ACCOUNT_1_ADDR,
         cep18_token,
-        METHOD_MINT,
+        ENTRY_POINT_MINT,
         runtime_args! {
             ARG_OWNER => Key::Account(*ACCOUNT_1_ADDR),
             ARG_AMOUNT => mint_amount,
@@ -299,7 +301,7 @@ fn test_security_no_rights() {
     let passing_admin_mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
+        ENTRY_POINT_MINT,
         runtime_args! {
             ARG_OWNER => Key::Account(*ACCOUNT_1_ADDR),
             ARG_AMOUNT => mint_amount,
@@ -315,7 +317,7 @@ fn test_security_no_rights() {
     let burn_request = ExecuteRequestBuilder::contract_call_by_hash(
         *ACCOUNT_1_ADDR,
         cep18_token,
-        METHOD_BURN,
+        ENTRY_POINT_BURN,
         runtime_args! {
             ARG_OWNER => Key::Account(*ACCOUNT_1_ADDR),
             ARG_AMOUNT => mint_amount,
@@ -335,14 +337,14 @@ fn test_security_minter_rights() {
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
         ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-        ENABLE_MINT_BURN => true,
+        ARG_ENABLE_MINT_BURN => true,
         MINTER_LIST => vec![Key::Account(*ACCOUNT_1_ADDR)]
     });
 
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *ACCOUNT_1_ADDR,
         cep18_token,
-        METHOD_MINT,
+        ENTRY_POINT_MINT,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
             ARG_AMOUNT => mint_amount,
@@ -362,13 +364,13 @@ fn test_security_burner_rights() {
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
         ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-        ENABLE_MINT_BURN => true,
+        ARG_ENABLE_MINT_BURN => true,
     });
 
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *ACCOUNT_1_ADDR,
         cep18_token,
-        METHOD_MINT,
+        ENTRY_POINT_MINT,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
             ARG_AMOUNT => mint_amount,
@@ -389,7 +391,7 @@ fn test_security_burner_rights() {
     let working_mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
+        ENTRY_POINT_MINT,
         runtime_args! {
             ARG_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
             ARG_AMOUNT => mint_amount,
@@ -403,7 +405,7 @@ fn test_security_burner_rights() {
     let burn_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_BURN,
+        ENTRY_POINT_BURN,
         runtime_args! {
             ARG_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
             ARG_AMOUNT => mint_amount,
@@ -423,14 +425,14 @@ fn test_change_security() {
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
         ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-        ENABLE_MINT_BURN => true,
+        ARG_ENABLE_MINT_BURN => true,
         ADMIN_LIST => vec![Key::Account(*ACCOUNT_1_ADDR)]
     });
 
     let change_security_request = ExecuteRequestBuilder::contract_call_by_hash(
         *ACCOUNT_1_ADDR,
         cep18_token,
-        CHANGE_SECURITY,
+        ENTRY_POINT_CHANGE_SECURITY,
         runtime_args! {
             NONE_LIST => vec![Key::Account(*DEFAULT_ACCOUNT_ADDR)],
         },
@@ -445,7 +447,7 @@ fn test_change_security() {
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
+        ENTRY_POINT_MINT,
         runtime_args! {
             ARG_OWNER => TOKEN_OWNER_ADDRESS_1,
             ARG_AMOUNT => mint_amount,

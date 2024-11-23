@@ -1,11 +1,11 @@
 use casper_engine_test_support::DEFAULT_ACCOUNT_ADDR;
 use casper_types::{Key, U256};
+use cowl_cep18::constants::{
+    ARG_DECIMALS, ARG_NAME, ARG_SYMBOL, ARG_TOTAL_SUPPLY, DICT_ALLOWANCES, DICT_BALANCES,
+};
 
 use crate::utility::{
-    constants::{
-        ALLOWANCES_KEY, BALANCES_KEY, DECIMALS_KEY, NAME_KEY, SYMBOL_KEY, TOKEN_DECIMALS,
-        TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY, TOTAL_SUPPLY_KEY,
-    },
+    constants::{TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY},
     installer_request_builders::{
         cep18_check_balance_of, invert_cep18_address, setup, TestContext,
     },
@@ -15,16 +15,16 @@ use crate::utility::{
 fn should_have_queryable_properties() {
     let (mut builder, TestContext { cep18_token, .. }) = setup();
 
-    let name: String = builder.get_value(cep18_token, NAME_KEY);
+    let name: String = builder.get_value(cep18_token, ARG_NAME);
     assert_eq!(name, TOKEN_NAME);
 
-    let symbol: String = builder.get_value(cep18_token, SYMBOL_KEY);
+    let symbol: String = builder.get_value(cep18_token, ARG_SYMBOL);
     assert_eq!(symbol, TOKEN_SYMBOL);
 
-    let decimals: u8 = builder.get_value(cep18_token, DECIMALS_KEY);
+    let decimals: u8 = builder.get_value(cep18_token, ARG_DECIMALS);
     assert_eq!(decimals, TOKEN_DECIMALS);
 
-    let total_supply: U256 = builder.get_value(cep18_token, TOTAL_SUPPLY_KEY);
+    let total_supply: U256 = builder.get_value(cep18_token, ARG_TOTAL_SUPPLY);
     assert_eq!(total_supply, U256::from(TOKEN_TOTAL_SUPPLY));
 
     let owner_key = Key::Account(*DEFAULT_ACCOUNT_ADDR);
@@ -53,6 +53,10 @@ fn should_not_store_balances_or_allowances_under_account_after_install() {
         .expect("should have account");
 
     let named_keys = account.named_keys();
-    assert!(!named_keys.contains_key(BALANCES_KEY), "{:?}", named_keys);
-    assert!(!named_keys.contains_key(ALLOWANCES_KEY), "{:?}", named_keys);
+    assert!(!named_keys.contains_key(DICT_BALANCES), "{:?}", named_keys);
+    assert!(
+        !named_keys.contains_key(DICT_ALLOWANCES),
+        "{:?}",
+        named_keys
+    );
 }

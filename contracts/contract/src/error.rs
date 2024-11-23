@@ -48,6 +48,17 @@ pub enum Cep18Error {
     CannotTargetSelfUser = 60017,
     InvalidBurnTarget = 60018,
     MissingPackageHashForUpgrade = 60019,
+    /* COWL */
+    TransferFilterContractDenied = 50000,
+    InvalidTransferFilterContract = 50001,
+    InvalidTransferFilterMethod = 50002,
+    MissingTransferFilterContract = 50003,
+    MissingTransferFilterMethod = 50004,
+    FailedToCreateArg = 50005,
+    InvalidData = 50006,
+    InvalidAmount = 50007,
+    UnexpectedKeyVariant = 50008,
+    /*  */
 }
 
 impl From<Cep18Error> for ApiError {

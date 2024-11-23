@@ -9,6 +9,10 @@ casper-types = "4.0.2"
 casper-engine-test-support = "7.0.3"
 casper-execution-engine = "7.0.3"
 once_cell = "1.20.2"
+# COWL
+cowl-cep18 = { path = "../contracts/contract", default-features = false }
+cep18-test-contract = { path = "../contracts/test", default-features = false }
+casper-event-standard = { version = "0.5.0", default-features = false }
 
 [lib]
 name = "tests"
