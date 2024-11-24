@@ -44,8 +44,8 @@ use cowl_cep18::{
         ARG_RECIPIENT, ARG_SPENDER, ARG_SYMBOL, ARG_TO, ARG_TOTAL_SUPPLY,
         ARG_TRANSFER_FILTER_CONTRACT_PACKAGE, ARG_TRANSFER_FILTER_METHOD, DICT_ALLOWANCES,
         DICT_BALANCES, DICT_SECURITY_BADGES, ENTRY_POINT_INIT, ENTRY_POINT_UPGRADE, MINTER_LIST,
-        NONE_LIST, PREFIX_ACCESS_KEY_NAME, PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME,
-        PREFIX_CONTRACT_VERSION,
+        NONE_LIST, PREFIX_ACCESS_KEY_NAME, PREFIX_CEP18, PREFIX_CONTRACT_NAME,
+        PREFIX_CONTRACT_PACKAGE_NAME, PREFIX_CONTRACT_VERSION,
     },
     entry_points::generate_entry_points,
     error::Cep18Error,
@@ -417,17 +417,20 @@ pub extern "C" fn change_security() {
 pub fn upgrade_contract(name: &str) {
     let entry_points = generate_entry_points();
 
-    let contract_package_hash = runtime::get_key(&format!("{PREFIX_CONTRACT_PACKAGE_NAME}_{name}"))
-        .unwrap_or_revert()
-        .into_hash()
-        .map(ContractPackageHash::new)
-        .unwrap_or_revert_with(Cep18Error::MissingPackageHashForUpgrade);
+    let contract_package_hash = runtime::get_key(&format!(
+        "{PREFIX_CEP18}_{PREFIX_CONTRACT_PACKAGE_NAME}_{name}"
+    ))
+    .unwrap_or_revert()
+    .into_hash()
+    .map(ContractPackageHash::new)
+    .unwrap_or_revert_with(Cep18Error::MissingPackageHashForUpgrade);
 
-    let previous_contract_hash = runtime::get_key(&format!("{PREFIX_CONTRACT_NAME}_{name}"))
-        .unwrap_or_revert()
-        .into_hash()
-        .map(ContractHash::new)
-        .unwrap_or_revert_with(Cep18Error::MissingPackageHashForUpgrade);
+    let previous_contract_hash =
+        runtime::get_key(&format!("{PREFIX_CEP18}_{PREFIX_CONTRACT_NAME}_{name}"))
+            .unwrap_or_revert()
+            .into_hash()
+            .map(ContractHash::new)
+            .unwrap_or_revert_with(Cep18Error::MissingPackageHashForUpgrade);
 
     let (contract_hash, contract_version) =
         storage::add_contract_version(contract_package_hash, entry_points, NamedKeys::new());
@@ -435,11 +438,11 @@ pub fn upgrade_contract(name: &str) {
     storage::disable_contract_version(contract_package_hash, previous_contract_hash)
         .unwrap_or_revert();
     runtime::put_key(
-        &format!("{PREFIX_CONTRACT_NAME}_{name}"),
+        &format!("{PREFIX_CEP18}_{PREFIX_CONTRACT_NAME}_{name}"),
         contract_hash.into(),
     );
     runtime::put_key(
-        &format!("{PREFIX_CONTRACT_VERSION}_{name}"),
+        &format!("{PREFIX_CEP18}_{PREFIX_CONTRACT_VERSION}_{name}"),
         storage::new_uref(contract_version).into(),
     );
     /* COWL */
@@ -491,23 +494,23 @@ pub fn install_contract(name: &str) {
     );
     let entry_points = generate_entry_points();
 
-    let package_hash_name = format!("{PREFIX_CONTRACT_PACKAGE_NAME}_{name}");
+    let package_hash_name = format!("{PREFIX_CEP18}_{PREFIX_CONTRACT_PACKAGE_NAME}_{name}");
 
     let (contract_hash, contract_version) = storage::new_contract(
         entry_points,
         Some(named_keys),
         Some(package_hash_name.clone()),
-        Some(format!("{PREFIX_ACCESS_KEY_NAME}_{name}")),
+        Some(format!("{PREFIX_CEP18}_{PREFIX_ACCESS_KEY_NAME}_{name}")),
     );
     let package_hash = runtime::get_key(&package_hash_name).unwrap_or_revert();
 
     // Store contract_hash and contract_version under the keys CONTRACT_NAME and CONTRACT_VERSION
     runtime::put_key(
-        &format!("{PREFIX_CONTRACT_NAME}_{name}"),
+        &format!("{PREFIX_CEP18}_{PREFIX_CONTRACT_NAME}_{name}"),
         contract_hash.into(),
     );
     runtime::put_key(
-        &format!("{PREFIX_CONTRACT_VERSION}_{name}"),
+        &format!("{PREFIX_CEP18}_{PREFIX_CONTRACT_VERSION}_{name}"),
         storage::new_uref(contract_version).into(),
     );
 
@@ -553,7 +556,7 @@ pub fn install_contract(name: &str) {
 #[no_mangle]
 pub extern "C" fn call() {
     let name: String = runtime::get_named_arg(ARG_NAME);
-    match runtime::get_key(&format!("{PREFIX_ACCESS_KEY_NAME}_{name}")) {
+    match runtime::get_key(&format!("{PREFIX_CEP18}_{PREFIX_ACCESS_KEY_NAME}_{name}")) {
         Some(_) => {
             upgrade_contract(&name);
         }

@@ -1,9 +1,10 @@
 /* COWL */
-pub const PREFIX_ACCESS_KEY_NAME: &str = "cowl_cep18_contract_package_access";
-pub const PREFIX_CEP85: &str = "cowl_cep18";
-pub const PREFIX_CONTRACT_NAME: &str = "cowl_cep18_contract_hash";
-pub const PREFIX_CONTRACT_VERSION: &str = "cowl_cep18_contract_version";
-pub const PREFIX_CONTRACT_PACKAGE_NAME: &str = "cowl_cep18_contract_package_hash";
+pub const PREFIX_CEP18: &str = "cowl_cep18";
+
+pub const PREFIX_ACCESS_KEY_NAME: &str = "contract_package_access";
+pub const PREFIX_CONTRACT_NAME: &str = "contract_hash";
+pub const PREFIX_CONTRACT_VERSION: &str = "contract_version";
+pub const PREFIX_CONTRACT_PACKAGE_NAME: &str = "contract_package_hash";
 
 pub const ENTRY_POINT_ALLOWANCE: &str = "allowance";
 pub const ENTRY_POINT_APPROVE: &str = "approve";
