@@ -6,7 +6,7 @@ use cowl_cep18::constants::{
 };
 
 use crate::utility::{
-    constants::{ACCOUNT_1_ADDR, ALLOWANCE_AMOUNT_1, ALLOWANCE_AMOUNT_2},
+    constants::{ACCOUNT_USER_1, ALLOWANCE_AMOUNT_1, ALLOWANCE_AMOUNT_2},
     installer_request_builders::{
         cep18_check_allowance_of, make_cep18_approve_request, setup, test_approve_for, TestContext,
     },
@@ -53,12 +53,17 @@ fn should_approve_funds_contract_to_contract() {
 fn should_approve_funds_account_to_account() {
     let (mut builder, test_context) = setup();
 
+    let TestContext {
+        ref test_accounts, ..
+    } = test_context;
+    let account_user_1 = *test_accounts.get(&ACCOUNT_USER_1).unwrap();
+
     test_approve_for(
         &mut builder,
         &test_context,
         Key::Account(*DEFAULT_ACCOUNT_ADDR),
         Key::Account(*DEFAULT_ACCOUNT_ADDR),
-        Key::Account(*ACCOUNT_1_ADDR),
+        Key::Account(account_user_1),
     );
 }
 
@@ -76,14 +81,23 @@ fn should_approve_funds_account_to_contract() {
 
 #[test]
 fn should_not_transfer_from_without_enough_allowance() {
-    let (mut builder, TestContext { cep18_token, .. }) = setup();
+    let (
+        mut builder,
+        TestContext {
+            cep18_token,
+            ref test_accounts,
+            ..
+        },
+    ) = setup();
+
+    let account_user_1 = *test_accounts.get(&ACCOUNT_USER_1).unwrap();
 
     let allowance_amount_1 = U256::from(ALLOWANCE_AMOUNT_1);
     let transfer_from_amount_1 = allowance_amount_1 + U256::one();
 
     let sender = *DEFAULT_ACCOUNT_ADDR;
     let owner = sender;
-    let recipient = *ACCOUNT_1_ADDR;
+    let recipient = account_user_1;
 
     let cep18_approve_args = runtime_args! {
         ARG_OWNER => Key::Account(owner),

@@ -43,15 +43,16 @@ use cowl_cep18::{
         ARG_EVENTS_MODE, ARG_FROM, ARG_NAME, ARG_OPERATOR, ARG_OWNER, ARG_PACKAGE_HASH,
         ARG_RECIPIENT, ARG_SPENDER, ARG_SYMBOL, ARG_TO, ARG_TOTAL_SUPPLY,
         ARG_TRANSFER_FILTER_CONTRACT_PACKAGE, ARG_TRANSFER_FILTER_METHOD, DICT_ALLOWANCES,
-        DICT_BALANCES, DICT_SECURITY_BADGES, ENTRY_POINT_INIT, MINTER_LIST, NONE_LIST,
-        PREFIX_ACCESS_KEY_NAME, PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME,
+        DICT_BALANCES, DICT_SECURITY_BADGES, ENTRY_POINT_INIT, ENTRY_POINT_UPGRADE, MINTER_LIST,
+        NONE_LIST, PREFIX_ACCESS_KEY_NAME, PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME,
         PREFIX_CONTRACT_VERSION,
     },
     entry_points::generate_entry_points,
     error::Cep18Error,
     events::{
         init_events, record_event_dictionary, Burn, ChangeSecurity, DecreaseAllowance, Event,
-        IncreaseAllowance, Mint, SetAllowance, Transfer, TransferFilter, TransferFrom,
+        IncreaseAllowance, Mint, SetAllowance, Transfer, TransferFilterUpdate, TransferFrom,
+        Upgrade,
     },
     modalities::TransferFilterContractResult,
     security::{change_sec_badge, sec_check, SecurityBadge},
@@ -413,7 +414,7 @@ pub extern "C" fn change_security() {
     }));
 }
 
-pub fn upgrade(name: &str) {
+pub fn upgrade_contract(name: &str) {
     let entry_points = generate_entry_points();
 
     let contract_package_hash = runtime::get_key(&format!("{PREFIX_CONTRACT_PACKAGE_NAME}_{name}"))
@@ -441,7 +442,17 @@ pub fn upgrade(name: &str) {
         &format!("{PREFIX_CONTRACT_VERSION}_{name}"),
         storage::new_uref(contract_version).into(),
     );
+    /* COWL */
+    runtime::call_contract::<()>(contract_hash, ENTRY_POINT_UPGRADE, runtime_args! {});
+    /*  */
 }
+
+/* COWL */
+#[no_mangle]
+pub extern "C" fn upgrade() {
+    record_event_dictionary(Event::Upgrade(Upgrade {}));
+}
+/*  */
 
 pub fn install_contract(name: &str) {
     let symbol: String = runtime::get_named_arg(ARG_SYMBOL);
@@ -544,7 +555,7 @@ pub extern "C" fn call() {
     let name: String = runtime::get_named_arg(ARG_NAME);
     match runtime::get_key(&format!("{PREFIX_ACCESS_KEY_NAME}_{name}")) {
         Some(_) => {
-            upgrade(&name);
+            upgrade_contract(&name);
         }
         None => {
             install_contract(&name);
@@ -621,7 +632,7 @@ pub extern "C" fn set_transfer_filter() {
         storage::new_uref(maybe_transfer_filter_method.clone()).into(),
     );
 
-    record_event_dictionary(Event::TransferFilter(TransferFilter {
+    record_event_dictionary(Event::TransferFilterUpdate(TransferFilterUpdate {
         key: caller,
         transfer_filter_contract_package_key: maybe_transfer_filter_contract_package_key,
         transfer_filter_method: maybe_transfer_filter_method,

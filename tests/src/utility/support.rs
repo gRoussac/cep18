@@ -1,18 +1,22 @@
+use std::fmt::Debug;
+
 use casper_engine_test_support::{
     ExecuteRequestBuilder, WasmTestBuilder, DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_INITIAL_BALANCE,
 };
+use casper_event_standard::EVENTS_DICT;
 use casper_execution_engine::{
     core::{engine_state::Error as EngineStateError, execution},
     storage::global_state::in_memory::InMemoryGlobalState,
 };
 use casper_types::{
     account::AccountHash,
+    bytesrepr::{Bytes, FromBytes},
     runtime_args,
     system::{
         handle_payment::{ARG_AMOUNT, ARG_TARGET},
         mint::ARG_ID,
     },
-    ApiError, PublicKey, RuntimeArgs, SecretKey,
+    ApiError, CLTyped, Key, PublicKey, RuntimeArgs, SecretKey,
 };
 
 pub fn assert_expected_error(actual_error: EngineStateError, error_code: u16, reason: &str) {
@@ -27,6 +31,48 @@ pub fn assert_expected_error(actual_error: EngineStateError, error_code: u16, re
         "Error should match {error_code} with reason: {reason}"
     )
 }
+
+/* COWL */
+pub fn get_dictionary_value_from_key<T: CLTyped + FromBytes>(
+    builder: &WasmTestBuilder<InMemoryGlobalState>,
+    contract_key: &Key,
+    dictionary_name: &str,
+    dictionary_key: &str,
+) -> T {
+    let seed_uref = *builder
+        .query(None, *contract_key, &[])
+        .expect("must have contract")
+        .as_contract()
+        .expect("must convert contract")
+        .named_keys()
+        .get(dictionary_name)
+        .expect("must have key")
+        .as_uref()
+        .expect("must convert to seed uref");
+
+    builder
+        .query_dictionary_item(None, seed_uref, dictionary_key)
+        .expect("should have dictionary value")
+        .as_cl_value()
+        .expect("T should be CLValue")
+        .to_owned()
+        .into_t()
+        .unwrap()
+}
+
+pub fn get_event<T: FromBytes + CLTyped + Debug>(
+    builder: &WasmTestBuilder<InMemoryGlobalState>,
+    contract_key: &Key,
+    index: u32,
+) -> T {
+    let bytes: Bytes =
+        get_dictionary_value_from_key(builder, contract_key, EVENTS_DICT, &index.to_string());
+    let (event, bytes) = T::from_bytes(&bytes).unwrap();
+    assert!(bytes.is_empty());
+    event
+}
+
+/*  */
 
 // Creates a dummy account and transfer funds to it
 pub fn create_funded_dummy_account(

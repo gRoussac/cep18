@@ -11,6 +11,7 @@ use crate::constants::{
     ENTRY_POINT_DECIMALS, ENTRY_POINT_DECREASE_ALLOWANCE, ENTRY_POINT_INCREASE_ALLOWANCE,
     ENTRY_POINT_INIT, ENTRY_POINT_MINT, ENTRY_POINT_NAME, ENTRY_POINT_SET_TRANSFER_FILTER,
     ENTRY_POINT_SYMBOL, ENTRY_POINT_TOTAL_SUPPLY, ENTRY_POINT_TRANSFER, ENTRY_POINT_TRANSFER_FROM,
+    ENTRY_POINT_UPGRADE,
 };
 
 /// Returns the `name` entry point.
@@ -229,6 +230,16 @@ pub fn set_transfer_filter() -> EntryPoint {
         EntryPointType::Contract,
     )
 }
+
+pub fn upgrade() -> EntryPoint {
+    EntryPoint::new(
+        String::from(ENTRY_POINT_UPGRADE),
+        vec![],
+        CLType::Unit,
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    )
+}
 /*  */
 
 /// Returns the default set of CEP-18 token entry points.
@@ -251,6 +262,7 @@ pub fn generate_entry_points() -> EntryPoints {
     entry_points.add_entry_point(mint());
     /* COWL */
     entry_points.add_entry_point(set_transfer_filter());
+    entry_points.add_entry_point(upgrade());
     /*  */
     entry_points
 }

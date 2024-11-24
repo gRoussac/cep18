@@ -20,7 +20,8 @@ pub enum Event {
     Transfer(Transfer),
     TransferFrom(TransferFrom),
     ChangeSecurity(ChangeSecurity),
-    TransferFilter(TransferFilter),
+    TransferFilterUpdate(TransferFilterUpdate),
+    Upgrade(Upgrade),
 }
 
 #[cfg(feature = "contract-support")]
@@ -92,12 +93,34 @@ pub struct ChangeSecurity {
 
 /* COWL */
 #[derive(Event, Debug, PartialEq, Eq)]
-pub struct TransferFilter {
+pub struct TransferFilterUpdate {
     pub key: Key,
     pub transfer_filter_contract_package_key: Option<Key>,
     pub transfer_filter_method: Option<String>,
 }
-/*  */
+
+impl TransferFilterUpdate {
+    pub fn new(
+        key: Key,
+        transfer_filter_contract_package_key: Option<Key>,
+        transfer_filter_method: Option<String>,
+    ) -> Self {
+        Self {
+            key,
+            transfer_filter_contract_package_key,
+            transfer_filter_method,
+        }
+    }
+}
+
+#[derive(Event, Debug, PartialEq, Eq, Default)]
+pub struct Upgrade {}
+
+impl Upgrade {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
 
 #[cfg(feature = "contract-support")]
 fn ces(event: Event) {
@@ -110,9 +133,12 @@ fn ces(event: Event) {
         Event::Transfer(ev) => emit(ev),
         Event::TransferFrom(ev) => emit(ev),
         Event::ChangeSecurity(ev) => emit(ev),
-        Event::TransferFilter(ev) => emit(ev),
+        Event::TransferFilterUpdate(ev) => emit(ev),
+        Event::Upgrade(ev) => emit(ev),
     }
 }
+
+/*  */
 
 #[cfg(feature = "contract-support")]
 pub fn init_events() {
@@ -129,7 +155,8 @@ pub fn init_events() {
             .with::<Transfer>()
             .with::<TransferFrom>()
             /* COWL */
-            .with::<TransferFilter>()
+            .with::<TransferFilterUpdate>()
+            .with::<Upgrade>()
             /*  */
             .with::<ChangeSecurity>();
         casper_event_standard::init(schemas);
