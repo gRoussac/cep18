@@ -19,5 +19,4 @@ pub const ALLOWANCE_AMOUNT_1: u64 = 456_789;
 pub const ALLOWANCE_AMOUNT_2: u64 = 87_654;
 pub const TOKEN_OWNER_AMOUNT_1: u64 = 1_000_000;
 pub const TOKEN_OWNER_AMOUNT_2: u64 = 2_000_000;
-
 /*  */
