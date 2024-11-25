@@ -622,12 +622,11 @@ pub extern "C" fn set_transfer_filter() {
         storage::new_uref(maybe_transfer_filter_contract_package_hash).into(),
     );
 
-    if maybe_transfer_filter_contract_package_key.is_some() {
-        if maybe_transfer_filter_method.is_some()
-            && maybe_transfer_filter_method.as_ref().unwrap().is_empty()
-        {
-            revert(Cep18Error::InvalidTransferFilterMethod);
-        }
+    if maybe_transfer_filter_contract_package_key.is_some()
+        && maybe_transfer_filter_method.is_some()
+        && maybe_transfer_filter_method.as_ref().unwrap().is_empty()
+    {
+        revert(Cep18Error::InvalidTransferFilterMethod);
     }
 
     runtime::put_key(

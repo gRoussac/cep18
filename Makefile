@@ -25,9 +25,9 @@ test: setup-test
 	cd tests && cargo test
 
 clippy:
-	cd contracts && cargo clippy --bins --target wasm32-unknown-unknown -- -D warnings
-	cd contracts && cargo clippy --lib --target wasm32-unknown-unknown -- -D warnings
-	cd contracts && cargo clippy --lib --target wasm32-unknown-unknown --no-default-features -- -D warnings
+	cd contracts && cargo clippy --bins --target wasm32-unknown-unknown -Z build-std=std,panic_abort -- -D warnings
+	cd contracts && cargo clippy --lib --target wasm32-unknown-unknown -Z build-std=std,panic_abort -- -D warnings
+	cd contracts && cargo clippy --lib --target wasm32-unknown-unknown -Z build-std=std,panic_abort --no-default-features -- -D warnings
 	cd tests && cargo clippy --all-targets -- -D warnings
 
 check-lint: clippy
