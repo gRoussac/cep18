@@ -175,31 +175,6 @@ pub extern "C" fn transfer() {
     }))
 }
 
-/* COWL */
-// //! Installer should not have remaining funds after installation
-// Allocation entry point to call after install
-// get_immediate_caller_address in above "transfer" entry point does not handle contracts as caller
-// (!= get_caller) no middleman (contract) acts for users.
-// Thus ALL funds shall be transfered to vesting adresses per vesting contract
-#[no_mangle]
-pub extern "C" fn allocate() {
-    let installer = get_key(ARG_INSTALLER).unwrap_or_revert_with(Cep18Error::InsufficientRights);
-
-    let recipient: Key = runtime::get_named_arg(ARG_RECIPIENT);
-    if installer == recipient {
-        revert(Cep18Error::CannotTargetSelfUser);
-    }
-    let amount: U256 = runtime::get_named_arg(ARG_AMOUNT);
-
-    transfer_balance(installer, recipient, amount).unwrap_or_revert();
-    record_event_dictionary(Event::Transfer(Transfer {
-        sender: installer,
-        recipient,
-        amount,
-    }))
-}
-/*  */
-
 #[no_mangle]
 pub extern "C" fn transfer_from() {
     let spender = get_immediate_caller_address().unwrap_or_revert();
