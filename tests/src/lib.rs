@@ -12,3 +12,8 @@ mod mint_and_burn;
 mod transfer;
 #[cfg(test)]
 mod utility;
+
+/* COWL */
+#[cfg(test)]
+mod allocate;
+/*  */

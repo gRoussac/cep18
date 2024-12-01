@@ -6,12 +6,12 @@ use casper_types::{
 
 use crate::constants::{
     ARG_ADDRESS, ARG_AMOUNT, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER,
-    ARG_TRANSFER_FILTER_CONTRACT_PACKAGE, ARG_TRANSFER_FILTER_METHOD, ENTRY_POINT_ALLOWANCE,
-    ENTRY_POINT_APPROVE, ENTRY_POINT_BALANCE_OF, ENTRY_POINT_BURN, ENTRY_POINT_CHANGE_SECURITY,
-    ENTRY_POINT_DECIMALS, ENTRY_POINT_DECREASE_ALLOWANCE, ENTRY_POINT_INCREASE_ALLOWANCE,
-    ENTRY_POINT_INIT, ENTRY_POINT_MINT, ENTRY_POINT_NAME, ENTRY_POINT_SET_TRANSFER_FILTER,
-    ENTRY_POINT_SYMBOL, ENTRY_POINT_TOTAL_SUPPLY, ENTRY_POINT_TRANSFER, ENTRY_POINT_TRANSFER_FROM,
-    ENTRY_POINT_UPGRADE,
+    ARG_TRANSFER_FILTER_CONTRACT_PACKAGE, ARG_TRANSFER_FILTER_METHOD, ENTRY_POINT_ALLOCATE,
+    ENTRY_POINT_ALLOWANCE, ENTRY_POINT_APPROVE, ENTRY_POINT_BALANCE_OF, ENTRY_POINT_BURN,
+    ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_DECIMALS, ENTRY_POINT_DECREASE_ALLOWANCE,
+    ENTRY_POINT_INCREASE_ALLOWANCE, ENTRY_POINT_INIT, ENTRY_POINT_MINT, ENTRY_POINT_NAME,
+    ENTRY_POINT_SET_TRANSFER_FILTER, ENTRY_POINT_SYMBOL, ENTRY_POINT_TOTAL_SUPPLY,
+    ENTRY_POINT_TRANSFER, ENTRY_POINT_TRANSFER_FROM, ENTRY_POINT_UPGRADE,
 };
 
 /// Returns the `name` entry point.
@@ -240,6 +240,16 @@ pub fn upgrade() -> EntryPoint {
         EntryPointType::Contract,
     )
 }
+
+pub fn allocate() -> EntryPoint {
+    EntryPoint::new(
+        String::from(ENTRY_POINT_ALLOCATE),
+        vec![],
+        CLType::Unit,
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    )
+}
 /*  */
 
 /// Returns the default set of CEP-18 token entry points.
@@ -263,6 +273,7 @@ pub fn generate_entry_points() -> EntryPoints {
     /* COWL */
     entry_points.add_entry_point(set_transfer_filter());
     entry_points.add_entry_point(upgrade());
+    entry_points.add_entry_point(allocate());
     /*  */
     entry_points
 }

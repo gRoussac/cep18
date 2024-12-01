@@ -40,8 +40,8 @@ use cowl_cep18::{
 use cowl_cep18::{
     constants::{
         ADMIN_LIST, ARG_ADDRESS, ARG_AMOUNT, ARG_DATA, ARG_DECIMALS, ARG_ENABLE_MINT_BURN,
-        ARG_EVENTS_MODE, ARG_FROM, ARG_NAME, ARG_OPERATOR, ARG_OWNER, ARG_PACKAGE_HASH,
-        ARG_RECIPIENT, ARG_SPENDER, ARG_SYMBOL, ARG_TO, ARG_TOTAL_SUPPLY,
+        ARG_EVENTS_MODE, ARG_FROM, ARG_INSTALLER, ARG_NAME, ARG_OPERATOR, ARG_OWNER,
+        ARG_PACKAGE_HASH, ARG_RECIPIENT, ARG_SPENDER, ARG_SYMBOL, ARG_TO, ARG_TOTAL_SUPPLY,
         ARG_TRANSFER_FILTER_CONTRACT_PACKAGE, ARG_TRANSFER_FILTER_METHOD, DICT_ALLOWANCES,
         DICT_BALANCES, DICT_SECURITY_BADGES, ENTRY_POINT_INIT, ENTRY_POINT_UPGRADE, MINTER_LIST,
         NONE_LIST, PREFIX_ACCESS_KEY_NAME, PREFIX_CEP18, PREFIX_CONTRACT_NAME,
@@ -174,6 +174,31 @@ pub extern "C" fn transfer() {
         amount,
     }))
 }
+
+/* COWL */
+// //! Installer should not have remaining funds after installation
+// Allocation entry point to call after install
+// get_immediate_caller_address in above "transfer" entry point does not handle contracts as caller
+// (!= get_caller) no middleman (contract) acts for users.
+// Thus ALL funds shall be transfered to vesting adresses per vesting contract
+#[no_mangle]
+pub extern "C" fn allocate() {
+    let installer = get_key(ARG_INSTALLER).unwrap_or_revert_with(Cep18Error::InsufficientRights);
+
+    let recipient: Key = runtime::get_named_arg(ARG_RECIPIENT);
+    if installer == recipient {
+        revert(Cep18Error::CannotTargetSelfUser);
+    }
+    let amount: U256 = runtime::get_named_arg(ARG_AMOUNT);
+
+    transfer_balance(installer, recipient, amount).unwrap_or_revert();
+    record_event_dictionary(Event::Transfer(Transfer {
+        sender: installer,
+        recipient,
+        amount,
+    }))
+}
+/*  */
 
 #[no_mangle]
 pub extern "C" fn transfer_from() {
@@ -365,6 +390,8 @@ pub extern "C" fn init() {
         ARG_TRANSFER_FILTER_METHOD,
         storage::new_uref(transfer_filter_method).into(),
     );
+
+    put_key(ARG_INSTALLER, caller.into());
     /*  */
 }
 

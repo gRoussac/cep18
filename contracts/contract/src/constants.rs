@@ -23,6 +23,7 @@ pub const ENTRY_POINT_TOTAL_SUPPLY: &str = "total_supply";
 pub const ENTRY_POINT_TRANSFER: &str = "transfer";
 pub const ENTRY_POINT_TRANSFER_FROM: &str = "transfer_from";
 pub const ENTRY_POINT_UPGRADE: &str = "upgrade";
+pub const ENTRY_POINT_ALLOCATE: &str = "allocate";
 
 pub const ARG_ADDRESS: &str = "address";
 pub const ARG_AMOUNT: &str = "amount";
@@ -43,6 +44,7 @@ pub const ARG_TO: &str = "to";
 pub const ARG_TOTAL_SUPPLY: &str = "total_supply";
 pub const ARG_TRANSFER_FILTER_CONTRACT_PACKAGE: &str = "transfer_filter_contract_package";
 pub const ARG_TRANSFER_FILTER_METHOD: &str = "transfer_filter_method";
+pub const ARG_INSTALLER: &str = "installer";
 
 pub const ADMIN_LIST: &str = "admin_list";
 pub const MINTER_LIST: &str = "minter_list";
