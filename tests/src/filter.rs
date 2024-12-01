@@ -111,9 +111,6 @@ fn check_transfers_with_transfer_filter_contract() {
         .get_value::<Option<String>>(cep18_token, ARG_TRANSFER_FILTER_METHOD)
         .unwrap();
 
-    dbg!(transfer_filter_contract_stored);
-    dbg!(transfer_filter_contract_package);
-
     assert_eq!(
         transfer_filter_contract_stored,
         transfer_filter_contract_package
