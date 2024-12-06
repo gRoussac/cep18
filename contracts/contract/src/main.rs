@@ -42,10 +42,10 @@ use cowl_cep18::{
         ADMIN_LIST, ARG_ADDRESS, ARG_AMOUNT, ARG_DATA, ARG_DECIMALS, ARG_ENABLE_MINT_BURN,
         ARG_EVENTS_MODE, ARG_FROM, ARG_INSTALLER, ARG_NAME, ARG_OPERATOR, ARG_OWNER,
         ARG_PACKAGE_HASH, ARG_RECIPIENT, ARG_SPENDER, ARG_SYMBOL, ARG_TO, ARG_TOTAL_SUPPLY,
-        ARG_TRANSFER_FILTER_CONTRACT_PACKAGE, ARG_TRANSFER_FILTER_METHOD, DICT_ALLOWANCES,
-        DICT_BALANCES, DICT_SECURITY_BADGES, ENTRY_POINT_INIT, ENTRY_POINT_UPGRADE, MINTER_LIST,
-        NONE_LIST, PREFIX_ACCESS_KEY_NAME, PREFIX_CEP18, PREFIX_CONTRACT_NAME,
-        PREFIX_CONTRACT_PACKAGE_NAME, PREFIX_CONTRACT_VERSION,
+        ARG_TRANSFER_FILTER_CONTRACT_PACKAGE, ARG_TRANSFER_FILTER_METHOD, ARG_UPGRADE_FLAG,
+        DICT_ALLOWANCES, DICT_BALANCES, DICT_SECURITY_BADGES, ENTRY_POINT_INIT,
+        ENTRY_POINT_UPGRADE, MINTER_LIST, NONE_LIST, PREFIX_ACCESS_KEY_NAME, PREFIX_CEP18,
+        PREFIX_CONTRACT_NAME, PREFIX_CONTRACT_PACKAGE_NAME, PREFIX_CONTRACT_VERSION,
     },
     entry_points::generate_entry_points,
     error::Cep18Error,
@@ -558,14 +558,18 @@ pub fn install_contract(name: &str) {
 #[no_mangle]
 pub extern "C" fn call() {
     let name: String = runtime::get_named_arg(ARG_NAME);
-    match runtime::get_key(&format!("{PREFIX_CEP18}_{PREFIX_ACCESS_KEY_NAME}_{name}")) {
-        Some(_) => {
-            upgrade_contract(&name);
-        }
-        None => {
-            install_contract(&name);
-        }
+    /* COWL */
+    let upgrade_flag: Option<bool> =
+        get_optional_named_arg_with_user_errors(ARG_UPGRADE_FLAG, Cep18Error::InvalidUpgradeFlag);
+
+    let access_key = get_key(&format!("{PREFIX_CEP18}_{PREFIX_ACCESS_KEY_NAME}_{name}"));
+
+    if upgrade_flag.is_some() && upgrade_flag.unwrap() && access_key.is_some() {
+        upgrade_contract(&name);
+    } else if access_key.is_none() {
+        install_contract(&name);
     }
+    /*  */
 }
 
 /* COWL */

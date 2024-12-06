@@ -49,6 +49,7 @@ pub enum Cep18Error {
     InvalidBurnTarget = 60018,
     MissingPackageHashForUpgrade = 60019,
     /* COWL */
+    InvalidUpgradeFlag = 60020,
     TransferFilterContractDenied = 50000,
     InvalidTransferFilterContract = 50001,
     InvalidTransferFilterMethod = 50002,

@@ -1,6 +1,9 @@
 use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
 use casper_types::{runtime_args, Key, RuntimeArgs};
-use cowl_cep18::{constants::ARG_NAME, events::Upgrade};
+use cowl_cep18::{
+    constants::{ARG_NAME, ARG_UPGRADE_FLAG},
+    events::Upgrade,
+};
 
 use crate::utility::{
     constants::{CEP18_CONTRACT_WASM, CEP18_TEST_TOKEN_CONTRACT_VERSION, TOKEN_NAME},
@@ -31,6 +34,7 @@ fn should_upgrade_contract_version() {
         CEP18_CONTRACT_WASM,
         runtime_args! {
             ARG_NAME => TOKEN_NAME,
+            ARG_UPGRADE_FLAG => true,
         },
     )
     .build();
