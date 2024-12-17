@@ -2,8 +2,8 @@
 pub const CEP18_CONTRACT_WASM: &str = "cowl_cep18.wasm";
 pub const CEP18_TEST_CONTRACT_WASM: &str = "cep18_test_contract.wasm";
 
-pub const CEP18_TEST_TOKEN_CONTRACT_NAME: &str = "cowl_cep18_contract_hash_casper_test";
-pub const CEP18_TEST_TOKEN_CONTRACT_VERSION: &str = "cowl_cep18_contract_version_casper_test";
+pub const CEP18_TEST_TOKEN_CONTRACT_NAME: &str = "cep18_contract_hash_casper_test";
+pub const CEP18_TEST_TOKEN_CONTRACT_VERSION: &str = "cep18_contract_version_casper_test";
 
 pub const TOKEN_NAME: &str = "casper_test";
 pub const TOKEN_SYMBOL: &str = "CSPRT";

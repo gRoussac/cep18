@@ -1,5 +1,5 @@
 /* COWL */
-pub const PREFIX_CEP18: &str = "cowl_cep18";
+pub const PREFIX_CEP18: &str = "cep18";
 
 pub const PREFIX_ACCESS_KEY_NAME: &str = "contract_package_access";
 pub const PREFIX_CONTRACT_NAME: &str = "contract_hash";
