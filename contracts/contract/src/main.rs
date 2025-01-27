@@ -19,11 +19,9 @@ use alloc::{
     vec,
     vec::Vec,
 };
-
 use allowances::{get_allowances_uref, read_allowance_from, write_allowance_to};
 use balances::{get_balances_uref, read_balance_from, transfer_balance, write_balance_to};
-use entry_points::generate_entry_points;
-
+use base64::{engine::general_purpose, Engine};
 use casper_contract::{
     contract_api::{
         runtime::{self, call_contract, get_caller, get_key, get_named_arg, put_key, revert},
@@ -32,19 +30,19 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    addressable_entity::{EntityKindTag, NamedKeys},
     bytesrepr::ToBytes,
     contract_messages::MessageTopicOperation,
-    runtime_args, AddressableEntityHash, CLValue, EntityAddr, Key, PackageHash, U256,
+    contracts::{ContractVersionKey, ProtocolVersionMajor},
+    runtime_args, AddressableEntityHash, CLValue, EntityAddr, Key, NamedKeys, PackageHash, U256,
 };
-
 use constants::{
     ACCESS_KEY_NAME_PREFIX, ADDRESS, ADMIN_LIST, ALLOWANCES, AMOUNT, BALANCES,
     CHANGE_EVENTS_MODE_ENTRY_POINT_NAME, CONDOR, CONTRACT_HASH, CONTRACT_NAME_PREFIX,
     CONTRACT_VERSION_PREFIX, DECIMALS, ENABLE_MINT_BURN, EVENTS, EVENTS_MODE, HASH_KEY_NAME_PREFIX,
-    INIT_ENTRY_POINT_NAME, MINTER_LIST, NAME, NONE_LIST, OWNER, PACKAGE_HASH, RECIPIENT,
-    SECURITY_BADGES, SPENDER, SYMBOL, TOTAL_SUPPLY,
+    INIT_ENTRY_POINT_NAME, MINTER_LIST, NAME, NONE_LIST, OWNER, PACKAGE_HASH, PROTOCOL_VERSION,
+    RECIPIENT, SECURITY_BADGES, SPENDER, SYMBOL, TOTAL_SUPPLY,
 };
+use entry_points::generate_entry_points;
 pub use error::Cep18Error;
 use events::{
     init_events, Burn, ChangeEventsMode, ChangeSecurity, DecreaseAllowance, Event,
@@ -321,7 +319,7 @@ pub extern "C" fn init() {
         .unwrap_or_revert_with(Cep18Error::FailedToCreateDictionary);
     dictionary_put(
         security_badges_dict,
-        &base64::encode(
+        &general_purpose::STANDARD.encode(
             initial_balance_holder_key
                 .to_bytes()
                 .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes),
@@ -345,7 +343,7 @@ pub extern "C" fn init() {
         for minter in minter_list {
             dictionary_put(
                 security_badges_dict,
-                &base64::encode(
+                &general_purpose::STANDARD.encode(
                     minter
                         .to_bytes()
                         .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes),
@@ -358,7 +356,7 @@ pub extern "C" fn init() {
         for admin in admin_list {
             dictionary_put(
                 security_badges_dict,
-                &base64::encode(
+                &general_purpose::STANDARD.encode(
                     admin
                         .to_bytes()
                         .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes),
@@ -449,7 +447,7 @@ pub fn upgrade(name: &str) {
     {
         Key::Hash(contract_hash) => contract_hash,
         Key::AddressableEntity(EntityAddr::SmartContract(contract_hash)) => contract_hash,
-        Key::Package(package_hash) => package_hash,
+        Key::SmartContract(package_hash) => package_hash,
         _ => revert(Cep18Error::MissingPackageHashForUpgrade),
     };
     let contract_package_hash = PackageHash::new(old_contract_package_hash);
@@ -479,14 +477,17 @@ pub fn upgrade(name: &str) {
     named_keys.insert(CONDOR.to_string(), storage::new_uref(CONDOR).into());
 
     let (contract_hash, contract_version) = storage::add_contract_version(
-        contract_package_hash,
+        contract_package_hash.into(),
         entry_points,
         named_keys,
         message_topics,
     );
 
-    storage::disable_contract_version(contract_package_hash, converted_previous_contract_hash)
-        .unwrap_or_revert_with(Cep18Error::FailedToDisableContractVersion);
+    storage::disable_contract_version(
+        contract_package_hash.into(),
+        converted_previous_contract_hash.into(),
+    )
+    .unwrap_or_revert_with(Cep18Error::FailedToDisableContractVersion);
 
     // migrate old ContractPackageHash as PackageHash so it's stored in a uniform format with the
     // new `new_contract` implementation
@@ -498,11 +499,17 @@ pub fn upgrade(name: &str) {
     // ContractHash in previous versions, now AddressableEntityHash
     runtime::put_key(
         &format!("{CONTRACT_NAME_PREFIX}{name}"),
-        Key::addressable_entity_key(EntityKindTag::SmartContract, contract_hash),
+        Key::contract_entity_key(contract_hash.into()),
     );
+
+    let contract_version_key = ContractVersionKey::new(
+        ProtocolVersionMajor::from(PROTOCOL_VERSION),
+        contract_version,
+    );
+
     runtime::put_key(
         &format!("{CONTRACT_VERSION_PREFIX}{name}"),
-        storage::new_uref(contract_version).into(),
+        storage::new_uref(contract_version_key.to_string()).into(),
     );
 
     if let Some(events_mode_u8) = events_mode {
@@ -570,15 +577,21 @@ pub fn install_contract(name: &str) {
     let package_hash =
         runtime::get_key(&hash_key_name).unwrap_or_revert_with(Cep18Error::FailedToGetPackageKey);
 
-    let contract_hash_key =
-        Key::addressable_entity_key(EntityKindTag::SmartContract, contract_hash);
+    let contract_hash_key = Key::contract_entity_key(contract_hash.into());
 
     // Store contract_hash and contract_version under the keys CONTRACT_NAME and CONTRACT_VERSION
     runtime::put_key(&format!("{CONTRACT_NAME_PREFIX}{name}"), contract_hash_key);
+
+    let contract_version_key = ContractVersionKey::new(
+        ProtocolVersionMajor::from(PROTOCOL_VERSION),
+        contract_version,
+    );
+
     runtime::put_key(
         &format!("{CONTRACT_VERSION_PREFIX}{name}"),
-        storage::new_uref(contract_version).into(),
+        storage::new_uref(contract_version_key.to_string()).into(),
     );
+    
     // Call contract to initialize it
     let mut init_args = runtime_args! {TOTAL_SUPPLY => total_supply, PACKAGE_HASH => package_hash, CONTRACT_HASH => contract_hash_key, EVENTS_MODE => events_mode};
 

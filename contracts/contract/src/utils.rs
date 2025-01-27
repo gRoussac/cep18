@@ -1,7 +1,10 @@
 //! Implementation details.
-use core::mem::MaybeUninit;
-
+use crate::{
+    constants::{SECURITY_BADGES, TOTAL_SUPPLY},
+    error::Cep18Error,
+};
 use alloc::{collections::BTreeMap, vec, vec::Vec};
+use base64::{engine::general_purpose, Engine};
 use casper_contract::{
     contract_api::{
         self,
@@ -18,11 +21,7 @@ use casper_types::{
     system::CallStackElement,
     ApiError, CLTyped, EntityAddr, Key, URef, U256,
 };
-
-use crate::{
-    constants::{SECURITY_BADGES, TOTAL_SUPPLY},
-    error::Cep18Error,
-};
+use core::mem::MaybeUninit;
 use serde::{Deserialize, Serialize};
 
 /// Gets [`URef`] under a name.
@@ -240,9 +239,11 @@ pub fn sec_check(allowed_badge_list: Vec<SecurityBadge>) {
     let caller = get_immediate_caller_key()
         .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
     let uref = get_uref(SECURITY_BADGES);
-    if let Some(badge) =
-        dictionary_get::<SecurityBadge>(uref, &base64::encode(caller.to_bytes().unwrap_or_revert()))
-            .unwrap_or_revert_with(Cep18Error::FailedToGetDictionaryValue)
+    if let Some(badge) = dictionary_get::<SecurityBadge>(
+        uref,
+        &general_purpose::STANDARD.encode(caller.to_bytes().unwrap_or_revert()),
+    )
+    .unwrap_or_revert_with(Cep18Error::FailedToGetDictionaryValue)
     {
         if !allowed_badge_list.contains(&badge) {
             revert(Cep18Error::InsufficientRights)
@@ -250,8 +251,8 @@ pub fn sec_check(allowed_badge_list: Vec<SecurityBadge>) {
     } else {
         let converted_key = match caller {
             Key::Account(account) => Key::AddressableEntity(EntityAddr::Account(account.value())),
-            Key::Hash(hash) => Key::Package(hash),
-            Key::Package(package_hash) => Key::Hash(package_hash),
+            Key::Hash(hash) => Key::SmartContract(hash),
+            Key::SmartContract(package_hash) => Key::Hash(package_hash),
             Key::AddressableEntity(EntityAddr::Account(account)) => {
                 Key::Account(AccountHash(account))
             }
@@ -260,7 +261,7 @@ pub fn sec_check(allowed_badge_list: Vec<SecurityBadge>) {
 
         if let Some(badge) = dictionary_get::<SecurityBadge>(
             uref,
-            &base64::encode(converted_key.to_bytes().unwrap_or_revert()),
+            &general_purpose::STANDARD.encode(converted_key.to_bytes().unwrap_or_revert()),
         )
         .unwrap_or_revert_with(Cep18Error::FailedToGetDictionaryValue)
         {
@@ -278,7 +279,7 @@ pub fn change_sec_badge(badge_map: &BTreeMap<Key, SecurityBadge>) {
     for (&user, &badge) in badge_map {
         dictionary_put(
             sec_uref,
-            &base64::encode(
+            &general_purpose::STANDARD.encode(
                 user.to_bytes()
                     .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes),
             ),

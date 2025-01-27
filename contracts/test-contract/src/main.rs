@@ -59,7 +59,7 @@ extern "C" fn check_total_supply() {
             .into_entity_hash()
             .unwrap_or_revert_with(ApiError::User(61000));
     let total_supply: U256 = runtime::call_contract(
-        token_contract,
+        token_contract.into(),
         TOTAL_SUPPLY_ENTRY_POINT_NAME,
         RuntimeArgs::default(),
     );
@@ -77,8 +77,11 @@ extern "C" fn check_balance_of() {
     let balance_args = runtime_args! {
         ADDRESS_RUNTIME_ARG_NAME => address,
     };
-    let result: U256 =
-        runtime::call_contract(token_contract, BALANCE_OF_ENTRY_POINT_NAME, balance_args);
+    let result: U256 = runtime::call_contract(
+        token_contract.into(),
+        BALANCE_OF_ENTRY_POINT_NAME,
+        balance_args,
+    );
 
     store_result(result);
 }
@@ -96,8 +99,11 @@ extern "C" fn check_allowance_of() {
         OWNER_RUNTIME_ARG_NAME => owner,
         SPENDER_RUNTIME_ARG_NAME => spender,
     };
-    let result: U256 =
-        runtime::call_contract(token_contract, ALLOWANCE_ENTRY_POINT_NAME, allowance_args);
+    let result: U256 = runtime::call_contract(
+        token_contract.into(),
+        ALLOWANCE_ENTRY_POINT_NAME,
+        allowance_args,
+    );
 
     store_result(result);
 }
@@ -116,7 +122,11 @@ extern "C" fn transfer_as_stored_contract() {
         AMOUNT_RUNTIME_ARG_NAME => amount,
     };
 
-    runtime::call_contract::<()>(token_contract, TRANSFER_ENTRY_POINT_NAME, transfer_args);
+    runtime::call_contract::<()>(
+        token_contract.into(),
+        TRANSFER_ENTRY_POINT_NAME,
+        transfer_args,
+    );
 }
 
 #[no_mangle]
@@ -136,7 +146,7 @@ extern "C" fn transfer_from_as_stored_contract() {
     };
 
     runtime::call_contract::<()>(
-        token_contract,
+        token_contract.into(),
         TRANSFER_FROM_ENTRY_POINT_NAME,
         transfer_from_args,
     );
@@ -156,7 +166,11 @@ extern "C" fn approve_as_stored_contract() {
         AMOUNT_RUNTIME_ARG_NAME => amount,
     };
 
-    runtime::call_contract::<()>(token_contract, APPROVE_ENTRY_POINT_NAME, approve_args);
+    runtime::call_contract::<()>(
+        token_contract.into(),
+        APPROVE_ENTRY_POINT_NAME,
+        approve_args,
+    );
 }
 
 #[no_mangle]

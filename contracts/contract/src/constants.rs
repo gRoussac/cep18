@@ -1,4 +1,5 @@
 //! Constants used by the CEP-18 contract.
+pub const PROTOCOL_VERSION: u32 = 2u32;
 
 /// Name of named-key for `name`.
 pub const NAME: &str = "name";

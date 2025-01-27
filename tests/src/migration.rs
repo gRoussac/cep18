@@ -3,8 +3,7 @@ use casper_engine_test_support::{
 };
 use casper_fixtures::LmdbFixtureState;
 use casper_types::{
-    bytesrepr::FromBytes, runtime_args, AddressableEntityHash, CLTyped, EraId, Key,
-    ProtocolVersion, RuntimeArgs, U256,
+    runtime_args, AddressableEntityHash, EraId, Key, ProtocolVersion, RuntimeArgs, U256,
 };
 
 use crate::utility::{
@@ -15,7 +14,8 @@ use crate::utility::{
         TOKEN_OWNER_ADDRESS_1_OLD, TOKEN_OWNER_AMOUNT_1, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
     },
     installer_request_builders::cep18_check_balance_of,
-    message_handlers::{entity, message_summary, message_topic},
+    message_handlers::{message_summary, message_topic},
+    support::query_stored_value,
 };
 
 pub fn upgrade_v1_5_6_fixture_to_v2_0_0_ee(
@@ -32,8 +32,9 @@ pub fn upgrade_v1_5_6_fixture_to_v2_0_0_ee(
     let mut upgrade_config = UpgradeRequestBuilder::new()
         .with_current_protocol_version(lmdb_fixture_state.genesis_protocol_version())
         .with_new_protocol_version(ProtocolVersion::V2_0_0)
-        .with_migrate_legacy_accounts(true)
-        .with_migrate_legacy_contracts(true)
+        // TODO GR
+        // .with_migrate_legacy_accounts(true)
+        // .with_migrate_legacy_contracts(true)
         .with_activation_point(EraId::new(1))
         .build();
 
@@ -47,20 +48,6 @@ pub fn upgrade_v1_5_6_fixture_to_v2_0_0_ee(
         builder.get_post_state_hash(),
         lmdb_fixture_state.post_state_hash
     );
-}
-
-pub fn query_contract_value<T: CLTyped + FromBytes>(
-    builder: &LmdbWasmTestBuilder,
-    path: &[String],
-) -> T {
-    builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), path)
-        .unwrap()
-        .as_cl_value()
-        .unwrap()
-        .clone()
-        .into_t()
-        .unwrap()
 }
 
 // the difference between the two is that in v1_binary the contract hash is fetched at [u8;32], while in v2_binary it is an AddressaleEntityHash
@@ -124,8 +111,12 @@ fn should_migrate_1_5_6_to_2_0_0_rc3() {
     // upgrade engine
     upgrade_v1_5_6_fixture_to_v2_0_0_ee(&mut builder, &lmdb_fixture_state);
 
-    let version_0: u32 =
-        query_contract_value(&builder, &[CEP18_TOKEN_CONTRACT_VERSION_KEY.to_string()]);
+    let version_0_major: u32 = 1;
+    let version_0_minor: u32 = query_stored_value(
+        &builder,
+        Key::from(*DEFAULT_ACCOUNT_ADDR),
+        CEP18_TOKEN_CONTRACT_VERSION_KEY,
+    );
 
     // upgrade the contract itself using a binary built for the new engine
     let upgrade_request = ExecuteRequestBuilder::standard(
@@ -143,10 +134,30 @@ fn should_migrate_1_5_6_to_2_0_0_rc3() {
 
     builder.exec(upgrade_request).expect_success().commit();
 
-    let version_1: u32 =
-        query_contract_value(&builder, &[CEP18_TOKEN_CONTRACT_VERSION_KEY.to_string()]);
+    let version_1_string: String = query_stored_value(
+        &builder,
+        Key::from(*DEFAULT_ACCOUNT_ADDR),
+        CEP18_TOKEN_CONTRACT_VERSION_KEY,
+    );
 
-    assert!(version_0 < version_1);
+    // Split into major and minor parts
+    let parts: Vec<&str> = version_1_string.split('.').collect();
+
+    // Parse the major and minor components
+    let version_1_major: u32 = parts
+        .first()
+        .expect("Failed to get the major version")
+        .parse()
+        .expect("Failed to parse the major version as u32");
+
+    let version_1_minor: u32 = parts
+        .get(1)
+        .unwrap_or(&"0") // Default to "0" if no minor version exists
+        .parse()
+        .expect("Failed to parse the minor version as u32");
+
+    assert!(version_0_major < version_1_major);
+    assert!(version_0_minor == version_1_minor);
 
     let cep18_contract_hash = get_contract_hash_v2_binary(&builder);
 
@@ -201,10 +212,11 @@ fn should_have_native_events() {
     let cep18_token = get_contract_hash_v2_binary(&builder);
 
     // events check
-    let entity = entity(&builder, &cep18_token);
+    // TODO GR
+    // let entity = entity(&builder, &cep18_token);
 
-    let (topic_name, message_topic_hash) = entity
-        .message_topics()
+    let binding = builder.message_topics(None, cep18_token.value()).unwrap();
+    let (topic_name, message_topic_hash) = binding
         .iter()
         .last()
         .expect("should have at least one topic");

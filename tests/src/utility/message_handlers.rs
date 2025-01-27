@@ -1,26 +1,8 @@
 use casper_engine_test_support::LmdbWasmTestBuilder;
 use casper_types::{
     contract_messages::{MessageChecksum, MessageTopicSummary, TopicNameHash},
-    AddressableEntity, AddressableEntityHash, Digest, EntityAddr, Key, StoredValue,
+    AddressableEntityHash, Digest, Key, StoredValue,
 };
-
-pub fn entity(
-    builder: &LmdbWasmTestBuilder,
-    contract_hash: &AddressableEntityHash,
-) -> AddressableEntity {
-    let query_result = builder
-        .query(None, Key::contract_entity_key(*contract_hash), &[])
-        .expect("should query");
-
-    if let StoredValue::AddressableEntity(entity) = query_result {
-        entity
-    } else {
-        panic!(
-            "Stored value is not an addressable entity: {:?}",
-            query_result
-        );
-    }
-}
 
 pub fn message_topic(
     builder: &LmdbWasmTestBuilder,
@@ -30,10 +12,7 @@ pub fn message_topic(
     let query_result = builder
         .query(
             None,
-            Key::message_topic(
-                EntityAddr::new_smart_contract(contract_hash.value()),
-                topic_name_hash,
-            ),
+            Key::message_topic(contract_hash.value(), topic_name_hash),
             &[],
         )
         .expect("should query");
@@ -58,11 +37,7 @@ pub fn message_summary(
 ) -> Result<MessageChecksum, String> {
     let query_result = builder.query(
         state_hash,
-        Key::message(
-            EntityAddr::new_smart_contract(contract_hash.value()),
-            *topic_name_hash,
-            message_index,
-        ),
+        Key::message(contract_hash.value(), *topic_name_hash, message_index),
         &[],
     )?;
 

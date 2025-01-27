@@ -1,0 +1,28 @@
+[package]
+name = "cep18"
+description.workspace = true
+version.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "cep18"
+path = "src/main.rs"
+bench = false
+doctest = false
+test = false
+
+[dependencies]
+casper-types.workspace = true
+casper-contract.workspace = true
+casper-event-standard = { git = "https://github.com/make-software/casper-event-standard", branch = "casper-2.0", default-features = false }
+base64 = { version = "0.22", default-features = false, features = ["alloc"] }
+hex = { version = "0.4", default-features = false }
+once_cell = { version = "1.20", default-features = false }
+serde = { version = "1", default-features = false }
+serde_json = { version = "1", default-features = false }
+serde-json-wasm = { version = "1", default-features = false }

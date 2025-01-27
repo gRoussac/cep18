@@ -30,10 +30,10 @@ pub(crate) fn invert_cep18_address(address: Key) -> Key {
         Key::Hash(contract_hash) => Key::Account(AccountHash::new(contract_hash)),
         Key::AddressableEntity(entity_addr) => match entity_addr {
             EntityAddr::System(_) => panic!("Unsupported Key variant"),
-            EntityAddr::Account(account) => Key::Package(account),
+            EntityAddr::Account(account) => Key::SmartContract(account),
             EntityAddr::SmartContract(_) => panic!("Unsupported Key variant"),
         },
-        Key::Package(contract_package_hash) => {
+        Key::SmartContract(contract_package_hash) => {
             Key::AddressableEntity(EntityAddr::Account(contract_package_hash))
         }
         _ => panic!("Unsupported Key variant"),
@@ -352,7 +352,7 @@ pub(crate) fn make_cep18_transfer_request(
                 EntityAddr::SmartContract(_contract_hash) => panic!("invalid variant"),
             }
         }
-        Key::Package(package_hash) => ExecuteRequestBuilder::versioned_contract_call_by_hash(
+        Key::SmartContract(package_hash) => ExecuteRequestBuilder::versioned_contract_call_by_hash(
             *DEFAULT_ACCOUNT_ADDR,
             PackageHash::new(package_hash),
             None,
@@ -413,7 +413,7 @@ pub(crate) fn make_cep18_approve_request(
                 EntityAddr::SmartContract(_contract_hash) => panic!("Invalid variant")
             }
         },
-        Key::Package(contract_package_hash) => ExecuteRequestBuilder::versioned_contract_call_by_hash(
+        Key::SmartContract(contract_package_hash) => ExecuteRequestBuilder::versioned_contract_call_by_hash(
             *DEFAULT_ACCOUNT_ADDR,
             PackageHash::new(contract_package_hash),
             None,

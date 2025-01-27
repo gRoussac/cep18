@@ -43,3 +43,18 @@ pub(crate) fn get_dictionary_value_from_key<T: CLTyped + FromBytes>(
         .into_t()
         .unwrap()
 }
+
+pub(crate) fn query_stored_value<T: CLTyped + FromBytes>(
+    builder: &LmdbWasmTestBuilder,
+    base_key: Key,
+    name: &str,
+) -> T {
+    let stored = builder.query(None, base_key, &[name.to_string()]);
+    let cl_value = stored
+        .expect("must have stored value")
+        .as_cl_value()
+        .cloned()
+        .expect("must have cl value");
+
+    cl_value.into_t::<T>().expect("must get value")
+}

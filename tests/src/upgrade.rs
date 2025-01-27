@@ -3,28 +3,37 @@ use casper_types::{runtime_args, Key, U256};
 
 use crate::utility::{
     constants::{
-        ARG_DECIMALS, ARG_NAME, ARG_SYMBOL, ARG_TOTAL_SUPPLY, CEP18_CONTRACT_WASM, TOKEN_DECIMALS,
-        TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
+        ARG_DECIMALS, ARG_NAME, ARG_SYMBOL, ARG_TOTAL_SUPPLY, CEP18_CONTRACT_WASM,
+        CEP18_TOKEN_CONTRACT_VERSION_KEY, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL,
+        TOKEN_TOTAL_SUPPLY,
     },
     installer_request_builders::setup,
+    support::query_stored_value,
 };
 
 #[test]
 fn should_upgrade_contract_version() {
     let (mut builder, ..) = setup();
 
-    let version_0: u32 = builder
-        .query(
-            None,
-            Key::Account(*DEFAULT_ACCOUNT_ADDR),
-            &["cep18_contract_version_CasperTest".to_string()],
-        )
-        .unwrap()
-        .as_cl_value()
-        .unwrap()
-        .clone()
-        .into_t()
-        .unwrap();
+    let version_0_string: String = query_stored_value(
+        &builder,
+        Key::from(*DEFAULT_ACCOUNT_ADDR),
+        CEP18_TOKEN_CONTRACT_VERSION_KEY,
+    );
+
+    let parts: Vec<&str> = version_0_string.split('.').collect();
+
+    let version_0_major: u32 = parts
+        .first()
+        .expect("Failed to get the major version")
+        .parse()
+        .expect("Failed to parse the major version as u32");
+
+    let version_0_minor: u32 = parts
+        .get(1)
+        .unwrap_or(&"0") // Default to "0" if no minor version exists
+        .parse()
+        .expect("Failed to parse the minor version as u32");
 
     let upgrade_request = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
@@ -40,18 +49,28 @@ fn should_upgrade_contract_version() {
 
     builder.exec(upgrade_request).expect_success().commit();
 
-    let version_1: u32 = builder
-        .query(
-            None,
-            Key::Account(*DEFAULT_ACCOUNT_ADDR),
-            &["cep18_contract_version_CasperTest".to_string()],
-        )
-        .unwrap()
-        .as_cl_value()
-        .unwrap()
-        .clone()
-        .into_t()
-        .unwrap();
+    let version_1_string: String = query_stored_value(
+        &builder,
+        Key::from(*DEFAULT_ACCOUNT_ADDR),
+        CEP18_TOKEN_CONTRACT_VERSION_KEY,
+    );
 
-    assert!(version_0 < version_1);
+    // // Split into major and minor parts
+    let parts: Vec<&str> = version_1_string.split('.').collect();
+
+    // // Parse the major and minor components
+    let version_1_major: u32 = parts
+        .first()
+        .expect("Failed to get the major version")
+        .parse()
+        .expect("Failed to parse the major version as u32");
+
+    let version_1_minor: u32 = parts
+        .get(1)
+        .unwrap_or(&"0") // Default to "0" if no minor version exists
+        .parse()
+        .expect("Failed to parse the minor version as u32");
+
+    assert!(version_0_major == version_1_major);
+    assert!(version_0_minor < version_1_minor);
 }

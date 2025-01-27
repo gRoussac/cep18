@@ -11,7 +11,7 @@ use crate::utility::{
         TOKEN_OWNER_ADDRESS_1, TOKEN_OWNER_AMOUNT_1, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
     },
     installer_request_builders::{setup_with_args, TestContext},
-    message_handlers::{entity, message_topic},
+    message_handlers::message_topic,
     support::get_dictionary_value_from_key,
 };
 
@@ -46,8 +46,13 @@ fn should_have_have_no_events() {
         addressable_cep18_token.value(),
     ));
     assert!(entity_with_named_keys.get("__events").is_none());
-    let entity = entity(&builder, &addressable_cep18_token);
-    assert!(entity.message_topics().is_empty());
+
+    //TODO GR
+    //  let entity = entity(&builder, &addressable_cep18_token);
+    assert!(builder
+        .message_topics(None, cep18_contract_hash.value())
+        .unwrap()
+        .is_empty());
 }
 
 #[test]
@@ -88,10 +93,13 @@ fn should_have_native_events() {
         .expect("should have contract hash");
 
     // events check
-    let entity = entity(&builder, &cep18_token);
+    // TODO GR
+    // let entity = entity(&builder, &cep18_token);
 
-    let (topic_name, message_topic_hash) = entity
-        .message_topics()
+    let binding = builder
+        .message_topics(None, cep18_contract_hash.value())
+        .unwrap();
+    let (topic_name, message_topic_hash) = binding
         .iter()
         .last()
         .expect("should have at least one topic");
@@ -117,7 +125,7 @@ fn should_have_native_events() {
     let messages = exec_result.messages();
     let mint_message = "{\"recipient\":\"entity-account-2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a\",\"amount\":\"1000000\"}";
     let message = Message::new(
-        casper_types::EntityAddr::SmartContract(cep18_token.value()),
+        cep18_token.value(),
         mint_message.into(),
         EVENTS.to_string(),
         *message_topic_hash,
