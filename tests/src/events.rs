@@ -47,8 +47,6 @@ fn should_have_have_no_events() {
     ));
     assert!(entity_with_named_keys.get("__events").is_none());
 
-    //TODO GR
-    //  let entity = entity(&builder, &addressable_cep18_token);
     assert!(builder
         .message_topics(None, cep18_contract_hash.value())
         .unwrap()
@@ -93,9 +91,6 @@ fn should_have_native_events() {
         .expect("should have contract hash");
 
     // events check
-    // TODO GR
-    // let entity = entity(&builder, &cep18_token);
-
     let binding = builder
         .message_topics(None, cep18_contract_hash.value())
         .unwrap();

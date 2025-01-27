@@ -55,10 +55,10 @@ fn should_upgrade_contract_version() {
         CEP18_TOKEN_CONTRACT_VERSION_KEY,
     );
 
-    // // Split into major and minor parts
+    // Split into major and minor parts
     let parts: Vec<&str> = version_1_string.split('.').collect();
 
-    // // Parse the major and minor components
+    // Parse the major and minor components
     let version_1_major: u32 = parts
         .first()
         .expect("Failed to get the major version")

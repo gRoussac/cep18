@@ -212,9 +212,6 @@ fn should_have_native_events() {
     let cep18_token = get_contract_hash_v2_binary(&builder);
 
     // events check
-    // TODO GR
-    // let entity = entity(&builder, &cep18_token);
-
     let binding = builder.message_topics(None, cep18_token.value()).unwrap();
     let (topic_name, message_topic_hash) = binding
         .iter()
