@@ -14,13 +14,13 @@ path = "src/fixture_gen.rs"
 bench = false
 doctest = false
 
+
 [dependencies]
+once_cell = "*"
 cep18 = { path = "../contracts/contract" }
 cep18-test-contract = { path = "../contracts/test-contract" }
 casper-types.workspace = true
-casper-event-standard = { workspace = true }
+casper-fixtures = { git = "https://github.com/deuszex/casper-fixtures", branch = "feat-2.0", default-features = false }
 casper-engine-test-support = { git = "https://github.com/casper-network/casper-node.git", default-features = false }
 casper-execution-engine = { git = "https://github.com/casper-network/casper-node.git", default-features = false }
-casper-storage = { git = "https://github.com/casper-network/casper-node.git", default-features = false }
-casper-fixtures = { git = "https://github.com/deuszex/casper-fixtures", branch = "feat-2.0", default-features = false }
-once_cell = "*"
+casper-event-standard.workspace = true

@@ -6,26 +6,25 @@ use casper_fixtures::generate_fixture;
 use casper_types::{
     account::AccountHash,
     addressable_entity::{AddressableEntityHash, EntityKindTag},
-    bytesrepr::FromBytes,
-    runtime_args, CLTyped, EntityAddr, GenesisAccount, Key, Motes, PackageHash, RuntimeArgs, U256,
-    U512, {PublicKey, SecretKey},
+    runtime_args, EntityAddr, GenesisAccount, Key, Motes, RuntimeArgs, U256, U512,
+    {PublicKey, SecretKey},
 };
 use cep18::constants::{
-    ARG_ADDRESS, ARG_AMOUNT, ARG_DECIMALS, ARG_NAME, ARG_OWNER, ARG_SYMBOL, ARG_TOTAL_SUPPLY,
-    ENTRY_POINT_BALANCE_OF,
+    ARG_ADDRESS, ARG_AMOUNT, ARG_DECIMALS, ARG_ENABLE_MINT_BURN, ARG_NAME, ARG_OWNER, ARG_SYMBOL,
+    ARG_TOTAL_SUPPLY, ENTRY_POINT_BALANCE_OF, ENTRY_POINT_MINT,
 };
-use cep18_test_contract::constants::{
-    ARG_TOKEN_CONTRACT, CEP18_TEST_CONTRACT_PACKAGE_NAME, RESULT_KEY,
-};
+use cep18_test_contract::constants::{ARG_TOKEN_CONTRACT, CEP18_TEST_CONTRACT_PACKAGE_NAME};
 use once_cell::sync::Lazy;
 use utility::constants::{
-    CEP18_CONTRACT_WASM, CEP18_TEST_CONTRACT_WASM, CEP18_TEST_TOKEN_CONTRACT_NAME, TOKEN_DECIMALS,
-    TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
+    AMOUNT_1, AMOUNT_2, CEP18_CONTRACT_WASM, CEP18_TEST_CONTRACT_WASM,
+    CEP18_TEST_TOKEN_CONTRACT_NAME, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
 };
+use utility::installer_request_builders::get_test_result;
 
 #[allow(unused)]
 mod utility;
 
+// TODO GR Clean up adresses
 pub static ACCOUNT_1_SECRET_KEY: Lazy<SecretKey> =
     Lazy::new(|| SecretKey::secp256k1_from_bytes([221u8; 32]).unwrap());
 pub static ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
@@ -38,46 +37,8 @@ pub static ACCOUNT_2_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| PublicKey::from(&*ACCOUNT_2_SECRET_KEY));
 pub static ACCOUNT_2_ADDR: Lazy<AccountHash> = Lazy::new(|| ACCOUNT_2_PUBLIC_KEY.to_account_hash());
 
-pub const AMOUNT_TRANSFER_1: u64 = 200_001;
-pub const AMOUNT_TRANSFER_2: u64 = 19_999;
-pub const AMOUNT_ALLOWANCE_1: u64 = 456_789;
-pub const AMOUNT_ALLOWANCE_2: u64 = 87_654;
-
-pub const METHOD_TRANSFER_AS_STORED_CONTRACT: &str = "transfer_as_stored_contract";
-pub const METHOD_APPROVE_AS_STORED_CONTRACT: &str = "approve_as_stored_contract";
-pub const METHOD_FROM_AS_STORED_CONTRACT: &str = "transfer_from_as_stored_contract";
-
 pub const TOKEN_OWNER_ADDRESS_1: Key = Key::Account(AccountHash::new([42; 32]));
-pub const AMOUNT_1: u64 = 1_000_000;
 pub const TOKEN_OWNER_ADDRESS_2: Key = Key::Hash([42; 32]);
-pub const AMOUNT_2: u64 = 2_000_000;
-
-pub const ENTRY_POINT_MINT: &str = "mint";
-pub const METHOD_BURN: &str = "burn";
-pub const DECREASE_ALLOWANCE: &str = "decrease_allowance";
-pub const INCREASE_ALLOWANCE: &str = "increase_allowance";
-pub const ENABLE_MINT_BURN: &str = "enable_mint_burn";
-pub const ADMIN_LIST: &str = "admin_list";
-pub const MINTER_LIST: &str = "minter_list";
-pub const NONE_LIST: &str = "none_list";
-pub const CHANGE_SECURITY: &str = "change_security";
-
-pub(crate) fn get_test_result<T: FromBytes + CLTyped>(
-    builder: &mut LmdbWasmTestBuilder,
-    cep18_test_contract_package: PackageHash,
-) -> T {
-    let contract_package = builder
-        .get_package(cep18_test_contract_package)
-        .expect("should have contract package");
-    let enabled_versions = contract_package.enabled_versions();
-
-    let contract_hash = enabled_versions
-        .contract_hashes()
-        .last()
-        .expect("should have latest version");
-    let entity_addr = EntityAddr::new_smart_contract(contract_hash.value());
-    builder.get_value(entity_addr, RESULT_KEY)
-}
 
 pub(crate) fn cep18_check_balance_of(
     builder: &mut LmdbWasmTestBuilder,
@@ -137,7 +98,7 @@ fn main() {
             ARG_SYMBOL => TOKEN_SYMBOL,
             ARG_DECIMALS => TOKEN_DECIMALS,
             ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-            ENABLE_MINT_BURN => true,
+            ARG_ENABLE_MINT_BURN => true,
         };
         let install_request_1 = ExecuteRequestBuilder::standard(
             *DEFAULT_ACCOUNT_ADDR,
@@ -188,9 +149,7 @@ fn main() {
             cep18_check_balance_of(
                 builder,
                 &cep18_contract_hash,
-                Key::AddressableEntity(casper_types::EntityAddr::Account(
-                    DEFAULT_ACCOUNT_ADDR.value()
-                ))
+                Key::AddressableEntity(EntityAddr::Account(DEFAULT_ACCOUNT_ADDR.value()))
             ),
             U256::from(TOKEN_TOTAL_SUPPLY),
         );

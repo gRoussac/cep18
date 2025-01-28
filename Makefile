@@ -1,4 +1,3 @@
-# Variables
 PINNED_TOOLCHAIN := $(shell cat contracts/rust-toolchain)
 WASM_TARGET_DIR := ./target/wasm32-unknown-unknown/release
 WASM_OUTPUT_DIR := tests/wasm
@@ -38,9 +37,9 @@ test: setup-test
 	cargo test -p tests --lib
 
 clippy:
-	cargo clippy -p cep18 --bins --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -- -D warnings
-	cargo clippy -p cep18 --lib --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -- -D warnings
-	cargo clippy -p cep18 --lib --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) --no-default-features -- -D warnings
+	cargo clippy --release -p cep18 --bins --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -- -D warnings
+	cargo clippy --release -p cep18 --lib --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -- -D warnings
+	cargo clippy --release -p cep18 --lib --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) --no-default-features -- -D warnings
 	cargo clippy -p cep18-test-contract --bins --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -- -D warnings
 	cargo clippy -p tests --all-targets $(CARGO_BUILD_FLAGS) -- -D warnings
 
@@ -60,4 +59,11 @@ clean:
 	cargo clean -p cep18
 	cargo clean -p cep18-test-contract
 	cargo clean -p tests
-	rm -rf tests/wasm
+	rm -rf $(WASM_OUTPUT_DIR)
+	rm -rf ./*/Cargo.lock
+
+.PHONY: cargo-update
+cargo-update:
+	cargo update -p cep18
+	cargo update -p cep18-test-contract
+	cargo update -p tests	
