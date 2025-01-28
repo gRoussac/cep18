@@ -14,12 +14,12 @@ prepare:
 
 .PHONY: build-contract
 build-contract:
-	RUSTFLAGS="$(RUSTFLAGS)" cargo build --release --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -p cep18
+	RUSTFLAGS="$(RUSTFLAGS)" cargo +$(PINNED_TOOLCHAIN) build --release --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -p cep18
 	wasm-strip $(WASM_TARGET_DIR)/$(word 1, $(WASM_FILES))
 
 .PHONY: build-all-contracts
 build-all-contracts: build-contract
-	RUSTFLAGS="$(RUSTFLAGS)" cargo build --release --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -p cep18-test-contract
+	RUSTFLAGS="$(RUSTFLAGS)" cargo +$(PINNED_TOOLCHAIN) build --release --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -p cep18-test-contract
 	wasm-strip $(WASM_TARGET_DIR)/$(word 2, $(WASM_FILES))
 
 .PHONY: setup-test
