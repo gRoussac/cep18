@@ -12,7 +12,7 @@ import {
 
 // Here you can check examples how to mint and burn tokens
 
-const run = async () => {
+const usage = async () => {
   const cep18 = new CEP18Client(NODE_URL, NETWORK_NAME);
   const client = new CasperServiceByJsonRPC(NODE_URL);
 
@@ -81,5 +81,10 @@ const run = async () => {
   );
 };
 
-// eslint-disable-next-line @typescript-eslint/no-floating-promises
-run();
+usage()
+  .then(() => {
+    console.log("Usage completed successfully.");
+  })
+  .catch((error) => {
+    console.error("Usage failed:", error);
+  });

@@ -30,12 +30,11 @@ interface ITypedContract {
   ): void;
 }
 
-const TypedContract = EventEnabledContract as {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  new (public nodeAddress: string, public networkName: string): ITypedContract;
-
+interface TypedContractConstructor {
+  new(nodeAddress: string, networkName: string): ITypedContract;
   prototype: ITypedContract;
-};
+}
+
+const TypedContract = EventEnabledContract as TypedContractConstructor;
 
 export default TypedContract;

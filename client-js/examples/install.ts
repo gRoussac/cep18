@@ -55,5 +55,10 @@ const install = async () => {
   console.log(`... Contract Package Hash: ${contractPackageHash}`);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-floating-promises
-install();
+install()
+  .then(() => {
+    console.log("Installation completed successfully.");
+  })
+  .catch((error) => {
+    console.error("Installation failed:", error);
+  });

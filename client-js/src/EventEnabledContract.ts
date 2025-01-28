@@ -44,7 +44,7 @@ export default class EventEnabledContract {
       ]);
     }
 
-    await this.eventStream.start();
+    this.eventStream.start();
 
     this.eventStream.subscribe(EventName.DeployProcessed, deployProcessed => {
       const {
@@ -64,10 +64,10 @@ export default class EventEnabledContract {
       results
         .map(
           r =>
-            ({
-              ...r,
-              deployInfo: { deployHash, timestamp }
-            } as CEP18EventWithDeployInfo)
+          ({
+            ...r,
+            deployInfo: { deployHash, timestamp }
+          } as CEP18EventWithDeployInfo)
         )
         .forEach(event => this.emit(event));
     });
