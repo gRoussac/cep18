@@ -68,7 +68,6 @@ The code in the [utility directory](https://github.com/casper-ecosystem/cep18/tr
 
 Expand the example below to see a subset of the required constants for this project. The testing framework defines constants via the [`constants.rs`](https://github.com/casper-ecosystem/cep18/blob/dev/tests/src/utility/constants.rs) file within the `utility` directory. For the most up-to-date version of the code, visit [GitHub](https://github.com/casper-ecosystem/cep18).
 
-
 <details>
 <summary>Example of required constants</summary>
 
@@ -85,7 +84,7 @@ use casper_types::{
 };
 
 use crate::utility::constants::{
-    ALLOWANCE_AMOUNT_1, ALLOWANCE_AMOUNT_2, TOTAL_SUPPLY_KEY, TRANSFER_AMOUNT_1, TRANSFER_AMOUNT_2,
+    AMOUNT_ALLOWANCE_1, AMOUNT_ALLOWANCE_2, TOTAL_SUPPLY_KEY, AMOUNT_TRANSFER_1, AMOUNT_TRANSFER_2,
 };
 
 use super::constants::{
@@ -94,7 +93,6 @@ use super::constants::{
 ```
 
 </details>
-
 
 ### Installing the Contract
 
@@ -229,8 +227,8 @@ pub(crate) fn test_cep18_transfer(
 
     // Defining the amount to be transferred to each account.
 
-    let transfer_amount_1 = U256::from(TRANSFER_AMOUNT_1);
-    let transfer_amount_2 = U256::from(TRANSFER_AMOUNT_2);
+    let transfer_amount_1 = U256::from(AMOUNT_TRANSFER_1);
+    let transfer_amount_2 = U256::from(AMOUNT_TRANSFER_2);
 
     // Checking the pre-existing balances of the default address and the two receiving addresses.
 

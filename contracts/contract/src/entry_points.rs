@@ -1,25 +1,23 @@
 //! Contains definition of the entry points.
 use alloc::{string::String, vec, vec::Vec};
-
 use casper_types::{
     CLType, CLTyped, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Key, Parameter,
     U256,
 };
 
 use crate::constants::{
-    ADDRESS, ALLOWANCE_ENTRY_POINT_NAME, AMOUNT, APPROVE_ENTRY_POINT_NAME,
-    BALANCE_OF_ENTRY_POINT_NAME, BURN_ENTRY_POINT_NAME, CHANGE_EVENTS_MODE_ENTRY_POINT_NAME,
-    CHANGE_SECURITY_ENTRY_POINT_NAME, CONDOR, DECIMALS_ENTRY_POINT_NAME,
-    DECREASE_ALLOWANCE_ENTRY_POINT_NAME, EVENTS_MODE, INCREASE_ALLOWANCE_ENTRY_POINT_NAME,
-    INIT_ENTRY_POINT_NAME, MINT_ENTRY_POINT_NAME, NAME_ENTRY_POINT_NAME, OWNER, RECIPIENT, SPENDER,
-    SYMBOL_ENTRY_POINT_NAME, TOTAL_SUPPLY_ENTRY_POINT_NAME, TRANSFER_ENTRY_POINT_NAME,
-    TRANSFER_FROM_ENTRY_POINT_NAME,
+    ARG_ADDRESS, ARG_AMOUNT, ARG_CONDOR, ARG_EVENTS_MODE, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER,
+    ENTRY_POINT_ALLOWANCE, ENTRY_POINT_APPROVE, ENTRY_POINT_BALANCE_OF, ENTRY_POINT_BURN,
+    ENTRY_POINT_CHANGE_EVENTS_MODE, ENTRY_POINT_CHANGE_SECURITY, ENTRY_POINT_DECIMALS,
+    ENTRY_POINT_DECREASE_ALLOWANCE, ENTRY_POINT_INCREASE_ALLOWANCE, ENTRY_POINT_INIT,
+    ENTRY_POINT_MINT, ENTRY_POINT_NAME, ENTRY_POINT_SYMBOL, ENTRY_POINT_TOTAL_SUPPLY,
+    ENTRY_POINT_TRANSFER, ENTRY_POINT_TRANSFER_FROM,
 };
 
 /// Returns the `condor` entry point.
 pub fn condor() -> EntryPoint {
     EntryPoint::new(
-        String::from(CONDOR),
+        String::from(ARG_CONDOR),
         Vec::new(),
         String::cl_type(),
         EntryPointAccess::Public,
@@ -31,7 +29,7 @@ pub fn condor() -> EntryPoint {
 /// Returns the `name` entry point.
 pub fn name() -> EntryPoint {
     EntryPoint::new(
-        String::from(NAME_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_NAME),
         Vec::new(),
         String::cl_type(),
         EntryPointAccess::Public,
@@ -43,7 +41,7 @@ pub fn name() -> EntryPoint {
 /// Returns the `symbol` entry point.
 pub fn symbol() -> EntryPoint {
     EntryPoint::new(
-        String::from(SYMBOL_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_SYMBOL),
         Vec::new(),
         String::cl_type(),
         EntryPointAccess::Public,
@@ -55,11 +53,11 @@ pub fn symbol() -> EntryPoint {
 /// Returns the `transfer_from` entry point.
 pub fn transfer_from() -> EntryPoint {
     EntryPoint::new(
-        String::from(TRANSFER_FROM_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_TRANSFER_FROM),
         vec![
-            Parameter::new(OWNER, Key::cl_type()),
-            Parameter::new(RECIPIENT, Key::cl_type()),
-            Parameter::new(AMOUNT, U256::cl_type()),
+            Parameter::new(ARG_OWNER, Key::cl_type()),
+            Parameter::new(ARG_RECIPIENT, Key::cl_type()),
+            Parameter::new(ARG_AMOUNT, U256::cl_type()),
         ],
         CLType::Unit,
         EntryPointAccess::Public,
@@ -71,10 +69,10 @@ pub fn transfer_from() -> EntryPoint {
 /// Returns the `allowance` entry point.
 pub fn allowance() -> EntryPoint {
     EntryPoint::new(
-        String::from(ALLOWANCE_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_ALLOWANCE),
         vec![
-            Parameter::new(OWNER, Key::cl_type()),
-            Parameter::new(SPENDER, Key::cl_type()),
+            Parameter::new(ARG_OWNER, Key::cl_type()),
+            Parameter::new(ARG_SPENDER, Key::cl_type()),
         ],
         U256::cl_type(),
         EntryPointAccess::Public,
@@ -86,10 +84,10 @@ pub fn allowance() -> EntryPoint {
 /// Returns the `approve` entry point.
 pub fn approve() -> EntryPoint {
     EntryPoint::new(
-        String::from(APPROVE_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_APPROVE),
         vec![
-            Parameter::new(SPENDER, Key::cl_type()),
-            Parameter::new(AMOUNT, U256::cl_type()),
+            Parameter::new(ARG_SPENDER, Key::cl_type()),
+            Parameter::new(ARG_AMOUNT, U256::cl_type()),
         ],
         CLType::Unit,
         EntryPointAccess::Public,
@@ -101,10 +99,10 @@ pub fn approve() -> EntryPoint {
 /// Returns the `increase_allowance` entry point.
 pub fn increase_allowance() -> EntryPoint {
     EntryPoint::new(
-        String::from(INCREASE_ALLOWANCE_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_INCREASE_ALLOWANCE),
         vec![
-            Parameter::new(SPENDER, Key::cl_type()),
-            Parameter::new(AMOUNT, U256::cl_type()),
+            Parameter::new(ARG_SPENDER, Key::cl_type()),
+            Parameter::new(ARG_AMOUNT, U256::cl_type()),
         ],
         CLType::Unit,
         EntryPointAccess::Public,
@@ -116,10 +114,10 @@ pub fn increase_allowance() -> EntryPoint {
 /// Returns the `decrease_allowance` entry point.
 pub fn decrease_allowance() -> EntryPoint {
     EntryPoint::new(
-        String::from(DECREASE_ALLOWANCE_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_DECREASE_ALLOWANCE),
         vec![
-            Parameter::new(SPENDER, Key::cl_type()),
-            Parameter::new(AMOUNT, U256::cl_type()),
+            Parameter::new(ARG_SPENDER, Key::cl_type()),
+            Parameter::new(ARG_AMOUNT, U256::cl_type()),
         ],
         CLType::Unit,
         EntryPointAccess::Public,
@@ -131,10 +129,10 @@ pub fn decrease_allowance() -> EntryPoint {
 /// Returns the `transfer` entry point.
 pub fn transfer() -> EntryPoint {
     EntryPoint::new(
-        String::from(TRANSFER_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_TRANSFER),
         vec![
-            Parameter::new(RECIPIENT, Key::cl_type()),
-            Parameter::new(AMOUNT, U256::cl_type()),
+            Parameter::new(ARG_RECIPIENT, Key::cl_type()),
+            Parameter::new(ARG_AMOUNT, U256::cl_type()),
         ],
         CLType::Unit,
         EntryPointAccess::Public,
@@ -146,8 +144,8 @@ pub fn transfer() -> EntryPoint {
 /// Returns the `balance_of` entry point.
 pub fn balance_of() -> EntryPoint {
     EntryPoint::new(
-        String::from(BALANCE_OF_ENTRY_POINT_NAME),
-        vec![Parameter::new(ADDRESS, Key::cl_type())],
+        String::from(ENTRY_POINT_BALANCE_OF),
+        vec![Parameter::new(ARG_ADDRESS, Key::cl_type())],
         U256::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Called,
@@ -158,7 +156,7 @@ pub fn balance_of() -> EntryPoint {
 /// Returns the `total_supply` entry point.
 pub fn total_supply() -> EntryPoint {
     EntryPoint::new(
-        String::from(TOTAL_SUPPLY_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_TOTAL_SUPPLY),
         Vec::new(),
         U256::cl_type(),
         EntryPointAccess::Public,
@@ -170,7 +168,7 @@ pub fn total_supply() -> EntryPoint {
 /// Returns the `decimals` entry point.
 pub fn decimals() -> EntryPoint {
     EntryPoint::new(
-        String::from(DECIMALS_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_DECIMALS),
         Vec::new(),
         u8::cl_type(),
         EntryPointAccess::Public,
@@ -182,10 +180,10 @@ pub fn decimals() -> EntryPoint {
 /// Returns the `burn` entry point.
 pub fn burn() -> EntryPoint {
     EntryPoint::new(
-        String::from(BURN_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_BURN),
         vec![
-            Parameter::new(OWNER, Key::cl_type()),
-            Parameter::new(AMOUNT, U256::cl_type()),
+            Parameter::new(ARG_OWNER, Key::cl_type()),
+            Parameter::new(ARG_AMOUNT, U256::cl_type()),
         ],
         CLType::Unit,
         EntryPointAccess::Public,
@@ -197,10 +195,10 @@ pub fn burn() -> EntryPoint {
 /// Returns the `mint` entry point.
 pub fn mint() -> EntryPoint {
     EntryPoint::new(
-        String::from(MINT_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_MINT),
         vec![
-            Parameter::new(OWNER, Key::cl_type()),
-            Parameter::new(AMOUNT, U256::cl_type()),
+            Parameter::new(ARG_OWNER, Key::cl_type()),
+            Parameter::new(ARG_AMOUNT, U256::cl_type()),
         ],
         CLType::Unit,
         EntryPointAccess::Public,
@@ -212,8 +210,8 @@ pub fn mint() -> EntryPoint {
 /// Returns the `change_events_mode` entry point.
 pub fn change_events_mode() -> EntryPoint {
     EntryPoint::new(
-        String::from(CHANGE_EVENTS_MODE_ENTRY_POINT_NAME),
-        vec![Parameter::new(EVENTS_MODE, u8::cl_type())],
+        String::from(ENTRY_POINT_CHANGE_EVENTS_MODE),
+        vec![Parameter::new(ARG_EVENTS_MODE, u8::cl_type())],
         CLType::Unit,
         EntryPointAccess::Public,
         EntryPointType::Called,
@@ -224,7 +222,7 @@ pub fn change_events_mode() -> EntryPoint {
 /// Returns the `change_security` entry point.
 pub fn change_security() -> EntryPoint {
     EntryPoint::new(
-        String::from(CHANGE_SECURITY_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_CHANGE_SECURITY),
         vec![
             // Optional Arguments (can be added or omitted when calling):
             /*
@@ -245,7 +243,7 @@ pub fn change_security() -> EntryPoint {
 /// Returns the `init` entry point.
 pub fn init() -> EntryPoint {
     EntryPoint::new(
-        String::from(INIT_ENTRY_POINT_NAME),
+        String::from(ENTRY_POINT_INIT),
         Vec::new(),
         CLType::Unit,
         EntryPointAccess::Public,

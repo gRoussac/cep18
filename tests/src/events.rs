@@ -1,18 +1,21 @@
-use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
-use casper_types::{
-    addressable_entity::EntityKindTag, bytesrepr::Bytes, contract_messages::Message, runtime_args,
-    AddressableEntityHash, Key, U256,
-};
-
 use crate::utility::{
     constants::{
-        AMOUNT, ARG_DECIMALS, ARG_NAME, ARG_SYMBOL, ARG_TOTAL_SUPPLY, CEP18_TOKEN_CONTRACT_KEY,
-        ENABLE_MINT_BURN, EVENTS, EVENTS_MODE, METHOD_MINT, OWNER, TOKEN_DECIMALS, TOKEN_NAME,
-        TOKEN_OWNER_ADDRESS_1, TOKEN_OWNER_AMOUNT_1, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
+        AMOUNT_1, CEP18_TEST_TOKEN_CONTRACT_NAME, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL,
+        TOKEN_TOTAL_SUPPLY,
     },
-    installer_request_builders::{setup_with_args, TestContext},
+    installer_request_builders::{get_test_account, setup_with_args, TestContext},
     message_handlers::message_topic,
-    support::get_dictionary_value_from_key,
+    support::get_event,
+};
+use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
+use casper_event_standard::EVENTS_DICT;
+use casper_types::{contract_messages::Message, runtime_args, AddressableEntityHash, U256};
+use cep18::{
+    constants::{
+        ARG_AMOUNT, ARG_DECIMALS, ARG_ENABLE_MINT_BURN, ARG_EVENTS, ARG_EVENTS_MODE, ARG_NAME,
+        ARG_OWNER, ARG_SYMBOL, ARG_TOTAL_SUPPLY, ENTRY_POINT_MINT,
+    },
+    events::Mint,
 };
 
 #[test]
@@ -28,16 +31,17 @@ fn should_have_have_no_events() {
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
         ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-        EVENTS_MODE => 0_u8,
-        ENABLE_MINT_BURN => true,
+        ARG_EVENTS_MODE => 0_u8,
+        ARG_ENABLE_MINT_BURN => true,
     });
 
+    let (account_user_1_key, _, _) = get_test_account("ACCOUNT_USER_1");
     let addressable_cep18_token = AddressableEntityHash::new(cep18_contract_hash.value());
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         addressable_cep18_token,
-        METHOD_MINT,
-        runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
+        ENTRY_POINT_MINT,
+        runtime_args! {ARG_OWNER => account_user_1_key, ARG_AMOUNT => U256::from(AMOUNT_1)},
     )
     .build();
     builder.exec(mint_request).expect_success().commit();
@@ -45,7 +49,7 @@ fn should_have_have_no_events() {
     let entity_with_named_keys = builder.get_named_keys(casper_types::EntityAddr::SmartContract(
         addressable_cep18_token.value(),
     ));
-    assert!(entity_with_named_keys.get("__events").is_none());
+    assert!(entity_with_named_keys.get(EVENTS_DICT).is_none());
 
     assert!(builder
         .message_topics(None, cep18_contract_hash.value())
@@ -66,16 +70,17 @@ fn should_have_native_events() {
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
         ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-        EVENTS_MODE => 2_u8,
-        ENABLE_MINT_BURN => true,
+        ARG_EVENTS_MODE => 2_u8,
+        ARG_ENABLE_MINT_BURN => true,
     });
 
+    let (account_user_1_key, account_user_1_account_hash, _) = get_test_account("ACCOUNT_USER_1");
     let addressable_cep18_token = AddressableEntityHash::new(cep18_contract_hash.value());
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         addressable_cep18_token,
-        METHOD_MINT,
-        runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
+        ENTRY_POINT_MINT,
+        runtime_args! {ARG_OWNER => account_user_1_key, ARG_AMOUNT => U256::from(AMOUNT_1)},
     )
     .build();
     builder.exec(mint_request).expect_success().commit();
@@ -86,7 +91,7 @@ fn should_have_native_events() {
     let account_named_keys = account.named_keys();
 
     let cep18_token = account_named_keys
-        .get(CEP18_TOKEN_CONTRACT_KEY)
+        .get(CEP18_TEST_TOKEN_CONTRACT_NAME)
         .and_then(|key| key.into_entity_hash())
         .expect("should have contract hash");
 
@@ -99,13 +104,13 @@ fn should_have_native_events() {
         .last()
         .expect("should have at least one topic");
 
-    assert_eq!(topic_name, &EVENTS.to_string());
+    assert_eq!(topic_name, &ARG_EVENTS.to_string());
 
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
-        runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
+        ENTRY_POINT_MINT,
+        runtime_args! {ARG_OWNER => account_user_1_key, ARG_AMOUNT => U256::from(AMOUNT_1)},
     )
     .build();
 
@@ -118,11 +123,14 @@ fn should_have_native_events() {
 
     let exec_result = builder.get_exec_result_owned(3).unwrap();
     let messages = exec_result.messages();
-    let mint_message = "{\"recipient\":\"entity-account-2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a\",\"amount\":\"1000000\"}";
+    let mint_message = format!(
+        "{{\"recipient\":\"{}\",\"amount\":\"1000000\"}}",
+        account_user_1_account_hash.to_formatted_string()
+    );
     let message = Message::new(
         cep18_token.value(),
         mint_message.into(),
-        EVENTS.to_string(),
+        ARG_EVENTS.to_string(),
         *message_topic_hash,
         2,
         2,
@@ -143,16 +151,17 @@ fn should_have_ces_events() {
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
         ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-        EVENTS_MODE => 1_u8,
-        ENABLE_MINT_BURN => true,
+        ARG_EVENTS_MODE => 1_u8,
+        ARG_ENABLE_MINT_BURN => true,
     });
 
+    let (account_user_1_key, _, _) = get_test_account("ACCOUNT_USER_1");
     let addressable_cep18_token = AddressableEntityHash::new(cep18_contract_hash.value());
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         addressable_cep18_token,
-        METHOD_MINT,
-        runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
+        ENTRY_POINT_MINT,
+        runtime_args! {ARG_OWNER => account_user_1_key, ARG_AMOUNT => U256::from(AMOUNT_1)},
     )
     .build();
     builder.exec(mint_request).expect_success().commit();
@@ -163,34 +172,23 @@ fn should_have_ces_events() {
     let account_named_keys = account.named_keys();
 
     let cep18_token = account_named_keys
-        .get(CEP18_TOKEN_CONTRACT_KEY)
+        .get(CEP18_TEST_TOKEN_CONTRACT_NAME)
         .and_then(|key| key.into_entity_hash())
         .expect("should have contract hash");
 
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
-        runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
+        ENTRY_POINT_MINT,
+        runtime_args! {ARG_OWNER=> account_user_1_key, ARG_AMOUNT => U256::from(AMOUNT_1)},
     )
     .build();
 
     builder.exec(mint_request).expect_success().commit();
 
-    let stored_event: Bytes = get_dictionary_value_from_key(
-        &builder,
-        &Key::addressable_entity_key(EntityKindTag::SmartContract, addressable_cep18_token),
-        "__events",
-        "1",
-    );
-    assert_eq!(
-        stored_event,
-        Bytes::from(vec![
-            10, 0, 0, 0, 101, 118, 101, 110, 116, 95, 77, 105, 110, 116, 17, 1, 42, 42, 42, 42, 42,
-            42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
-            42, 42, 42, 42, 42, 3, 64, 66, 15
-        ])
-    )
+    let expected_event = Mint::new(account_user_1_key, U256::from(AMOUNT_1));
+    let actual_event: Mint = get_event(&mut builder, &cep18_token, 1);
+    assert_eq!(actual_event, expected_event, "Expected Mint event.");
 }
 
 #[test]
@@ -206,17 +204,18 @@ fn should_test_error_message_topic_on_mint_overflow() {
         ARG_SYMBOL => TOKEN_SYMBOL,
         ARG_DECIMALS => TOKEN_DECIMALS,
         ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-        EVENTS_MODE => 0_u8,
-        ENABLE_MINT_BURN => true,
+        ARG_EVENTS_MODE => 0_u8,
+        ARG_ENABLE_MINT_BURN => true,
     });
 
+    let (account_user_1_key, _, _) = get_test_account("ACCOUNT_USER_1");
     let addressable_cep18_token = AddressableEntityHash::new(cep18_contract_hash.value());
 
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         addressable_cep18_token,
-        METHOD_MINT,
-        runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::MAX},
+        ENTRY_POINT_MINT,
+        runtime_args! {ARG_OWNER => account_user_1_key, ARG_AMOUNT => U256::MAX},
     )
     .build();
 

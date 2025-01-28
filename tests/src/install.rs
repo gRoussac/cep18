@@ -3,13 +3,15 @@ use casper_engine_test_support::{
     DEFAULT_ACCOUNTS, DEFAULT_ACCOUNT_ADDR,
 };
 use casper_execution_engine::{engine_state::Error as CoreError, execution::ExecError};
-use casper_types::{runtime_args, ApiError, EntityAddr, Key, U256};
+use casper_types::{runtime_args, system::mint::TOTAL_SUPPLY_KEY, ApiError, EntityAddr, Key, U256};
+use cep18::constants::{
+    ARG_DECIMALS, ARG_ENABLE_MINT_BURN, ARG_EVENTS_MODE, ARG_NAME, ARG_SYMBOL, ARG_TOTAL_SUPPLY,
+    DICT_ALLOWANCES, DICT_BALANCES,
+};
 
 use crate::utility::{
     constants::{
-        ALLOWANCES_KEY, ARG_DECIMALS, ARG_NAME, ARG_SYMBOL, ARG_TOTAL_SUPPLY, BALANCES_KEY,
-        CEP18_CONTRACT_WASM, DECIMALS_KEY, ENABLE_MINT_BURN, EVENTS_MODE, NAME_KEY, SYMBOL_KEY,
-        TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY, TOTAL_SUPPLY_KEY,
+        CEP18_CONTRACT_WASM, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
     },
     installer_request_builders::{
         cep18_check_balance_of, invert_cep18_address, setup, TestContext,
@@ -28,13 +30,13 @@ fn should_have_queryable_properties() {
 
     let cep18_entity_addr = EntityAddr::new_smart_contract(cep18_contract_hash.value());
 
-    let name: String = builder.get_value(cep18_entity_addr, NAME_KEY);
+    let name: String = builder.get_value(cep18_entity_addr, ARG_NAME);
     assert_eq!(name, TOKEN_NAME);
 
-    let symbol: String = builder.get_value(cep18_entity_addr, SYMBOL_KEY);
+    let symbol: String = builder.get_value(cep18_entity_addr, ARG_SYMBOL);
     assert_eq!(symbol, TOKEN_SYMBOL);
 
-    let decimals: u8 = builder.get_value(cep18_entity_addr, DECIMALS_KEY);
+    let decimals: u8 = builder.get_value(cep18_entity_addr, ARG_DECIMALS);
     assert_eq!(decimals, TOKEN_DECIMALS);
 
     let total_supply: U256 = builder.get_value(cep18_entity_addr, TOTAL_SUPPLY_KEY);
@@ -66,8 +68,8 @@ fn should_not_store_balances_or_allowances_under_account_after_install() {
 
     let named_keys = builder.get_named_keys_by_account_hash(*DEFAULT_ACCOUNT_ADDR);
 
-    assert!(!named_keys.contains(BALANCES_KEY), "{:?}", named_keys);
-    assert!(!named_keys.contains(ALLOWANCES_KEY), "{:?}", named_keys);
+    assert!(!named_keys.contains(DICT_BALANCES), "{:?}", named_keys);
+    assert!(!named_keys.contains(DICT_ALLOWANCES), "{:?}", named_keys);
 }
 
 #[test]
@@ -85,13 +87,13 @@ fn should_fail_with_left_over_bytes_converted_into_60006() {
             ARG_SYMBOL => TOKEN_SYMBOL,
             ARG_DECIMALS => TOKEN_DECIMALS,
             ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-            EVENTS_MODE => Some(0_u8),
-            ENABLE_MINT_BURN => true,
+            ARG_EVENTS_MODE => Some(0_u8),
+            ARG_ENABLE_MINT_BURN => true,
         },
     )
     .build();
 
-    builder.exec(install_request_1).expect_failure().commit();
+    builder.exec(install_request_1).expect_failure();
 
     let error = builder.get_error().expect("should have error");
     assert!(

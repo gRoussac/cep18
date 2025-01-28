@@ -3,15 +3,6 @@
 
 extern crate alloc;
 
-mod allowances;
-mod balances;
-pub mod constants;
-pub mod entry_points;
-mod error;
-mod events;
-mod modalities;
-mod utils;
-
 use alloc::{
     collections::BTreeMap,
     format,
@@ -19,45 +10,49 @@ use alloc::{
     vec,
     vec::Vec,
 };
-use allowances::{get_allowances_uref, read_allowance_from, write_allowance_to};
-use balances::{get_balances_uref, read_balance_from, transfer_balance, write_balance_to};
-use base64::{engine::general_purpose, Engine};
 use casper_contract::{
     contract_api::{
-        runtime::{self, call_contract, get_caller, get_key, get_named_arg, put_key, revert},
+        runtime::{self, call_contract, get_key, get_named_arg, put_key, revert},
         storage::{self, dictionary_put},
     },
     unwrap_or_revert::UnwrapOrRevert,
 };
+use casper_event_standard::EVENTS_DICT;
 use casper_types::{
     bytesrepr::ToBytes,
     contract_messages::MessageTopicOperation,
     contracts::{ContractVersionKey, ProtocolVersionMajor},
     runtime_args, AddressableEntityHash, CLValue, EntityAddr, Key, NamedKeys, PackageHash, U256,
 };
-use constants::{
-    ACCESS_KEY_NAME_PREFIX, ADDRESS, ADMIN_LIST, ALLOWANCES, AMOUNT, BALANCES,
-    CHANGE_EVENTS_MODE_ENTRY_POINT_NAME, CONDOR, CONTRACT_HASH, CONTRACT_NAME_PREFIX,
-    CONTRACT_VERSION_PREFIX, DECIMALS, ENABLE_MINT_BURN, EVENTS, EVENTS_MODE, HASH_KEY_NAME_PREFIX,
-    INIT_ENTRY_POINT_NAME, MINTER_LIST, NAME, NONE_LIST, OWNER, PACKAGE_HASH, PROTOCOL_VERSION,
-    RECIPIENT, SECURITY_BADGES, SPENDER, SYMBOL, TOTAL_SUPPLY,
-};
-use entry_points::generate_entry_points;
-pub use error::Cep18Error;
-use events::{
-    init_events, Burn, ChangeEventsMode, ChangeSecurity, DecreaseAllowance, Event,
-    IncreaseAllowance, Mint, SetAllowance, Transfer, TransferFrom,
-};
-use modalities::EventsMode;
-use utils::{
-    get_immediate_caller_key, get_optional_named_arg_with_user_errors, get_total_supply_uref,
-    read_from, read_total_supply_from, sec_check, write_total_supply_to, SecurityBadge,
+use cep18::{
+    allowances::{read_allowance_from, write_allowance_to},
+    balances::{read_balance_from, transfer_balance, write_balance_to},
+    constants::{
+        ADMIN_LIST, ARG_ADDRESS, ARG_AMOUNT, ARG_CONDOR, ARG_CONTRACT_HASH, ARG_DECIMALS,
+        ARG_ENABLE_MINT_BURN, ARG_EVENTS, ARG_EVENTS_MODE, ARG_NAME, ARG_OWNER, ARG_PACKAGE_HASH,
+        ARG_RECIPIENT, ARG_SPENDER, ARG_SYMBOL, ARG_TOTAL_SUPPLY, DICT_ALLOWANCES, DICT_BALANCES,
+        DICT_SECURITY_BADGES, ENTRY_POINT_CHANGE_EVENTS_MODE, ENTRY_POINT_INIT, MINTER_LIST,
+        NONE_LIST, PREFIX_ACCESS_KEY_NAME, PREFIX_CEP18, PREFIX_CONTRACT_NAME,
+        PREFIX_CONTRACT_PACKAGE_NAME, PREFIX_CONTRACT_VERSION, PROTOCOL_VERSION,
+    },
+    entry_points::generate_entry_points,
+    error::Cep18Error,
+    events::{
+        self, init_events, Burn, ChangeEventsMode, ChangeSecurity, DecreaseAllowance, Event,
+        IncreaseAllowance, Mint, SetAllowance, Transfer, TransferFrom,
+    },
+    modalities::EventsMode,
+    security::{change_sec_badge, sec_check, SecurityBadge},
+    utils::{
+        base64_encode, get_immediate_caller, get_optional_named_arg_with_user_errors,
+        get_stored_value, write_total_supply_to,
+    },
 };
 
 #[no_mangle]
 pub extern "C" fn condor() {
     runtime::ret(
-        CLValue::from_t(utils::read_from::<String>(CONDOR))
+        CLValue::from_t(get_stored_value::<String>(ARG_CONDOR))
             .unwrap_or_revert_with(Cep18Error::FailedToReturnEntryPointResult),
     );
 }
@@ -65,7 +60,7 @@ pub extern "C" fn condor() {
 #[no_mangle]
 pub extern "C" fn name() {
     runtime::ret(
-        CLValue::from_t(utils::read_from::<String>(NAME))
+        CLValue::from_t(get_stored_value::<String>(ARG_NAME))
             .unwrap_or_revert_with(Cep18Error::FailedToReturnEntryPointResult),
     );
 }
@@ -73,7 +68,7 @@ pub extern "C" fn name() {
 #[no_mangle]
 pub extern "C" fn symbol() {
     runtime::ret(
-        CLValue::from_t(utils::read_from::<String>(SYMBOL))
+        CLValue::from_t(get_stored_value::<String>(ARG_SYMBOL))
             .unwrap_or_revert_with(Cep18Error::FailedToReturnEntryPointResult),
     );
 }
@@ -81,7 +76,7 @@ pub extern "C" fn symbol() {
 #[no_mangle]
 pub extern "C" fn decimals() {
     runtime::ret(
-        CLValue::from_t(utils::read_from::<u8>(DECIMALS))
+        CLValue::from_t(get_stored_value::<u8>(ARG_DECIMALS))
             .unwrap_or_revert_with(Cep18Error::FailedToReturnEntryPointResult),
     );
 }
@@ -89,16 +84,15 @@ pub extern "C" fn decimals() {
 #[no_mangle]
 pub extern "C" fn total_supply() {
     runtime::ret(
-        CLValue::from_t(utils::read_from::<U256>(TOTAL_SUPPLY))
+        CLValue::from_t(get_stored_value::<U256>(ARG_TOTAL_SUPPLY))
             .unwrap_or_revert_with(Cep18Error::FailedToReturnEntryPointResult),
     );
 }
 
 #[no_mangle]
 pub extern "C" fn balance_of() {
-    let address: Key = runtime::get_named_arg(ADDRESS);
-    let balances_uref = get_balances_uref();
-    let balance = balances::read_balance_from(balances_uref, address);
+    let address: Key = runtime::get_named_arg(ARG_ADDRESS);
+    let balance = read_balance_from(address);
     runtime::ret(
         CLValue::from_t(balance).unwrap_or_revert_with(Cep18Error::FailedToReturnEntryPointResult),
     );
@@ -106,10 +100,9 @@ pub extern "C" fn balance_of() {
 
 #[no_mangle]
 pub extern "C" fn allowance() {
-    let spender: Key = runtime::get_named_arg(SPENDER);
-    let owner: Key = runtime::get_named_arg(OWNER);
-    let allowances_uref = get_allowances_uref();
-    let val: U256 = read_allowance_from(allowances_uref, owner, spender);
+    let spender: Key = runtime::get_named_arg(ARG_SPENDER);
+    let owner: Key = runtime::get_named_arg(ARG_OWNER);
+    let val: U256 = read_allowance_from(owner, spender);
     runtime::ret(
         CLValue::from_t(val).unwrap_or_revert_with(Cep18Error::FailedToReturnEntryPointResult),
     );
@@ -117,17 +110,15 @@ pub extern "C" fn allowance() {
 
 #[no_mangle]
 pub extern "C" fn approve() {
-    let owner = utils::get_immediate_caller_key()
-        .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
-    let spender: Key = runtime::get_named_arg(SPENDER);
-    if spender == owner {
+    let caller = get_immediate_caller();
+    let spender: Key = runtime::get_named_arg(ARG_SPENDER);
+    if spender == caller {
         revert(Cep18Error::CannotTargetSelfUser);
     }
-    let amount: U256 = runtime::get_named_arg(AMOUNT);
-    let allowances_uref = get_allowances_uref();
-    write_allowance_to(allowances_uref, owner, spender, amount);
+    let amount: U256 = runtime::get_named_arg(ARG_AMOUNT);
+    write_allowance_to(caller, spender, amount);
     events::record_event_dictionary(Event::SetAllowance(SetAllowance {
-        owner,
+        owner: caller,
         spender,
         allowance: amount,
     }))
@@ -135,19 +126,17 @@ pub extern "C" fn approve() {
 
 #[no_mangle]
 pub extern "C" fn decrease_allowance() {
-    let owner = utils::get_immediate_caller_key()
-        .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
-    let spender: Key = runtime::get_named_arg(SPENDER);
-    if spender == owner {
+    let caller = get_immediate_caller();
+    let spender: Key = runtime::get_named_arg(ARG_SPENDER);
+    if spender == caller {
         revert(Cep18Error::CannotTargetSelfUser);
     }
-    let amount: U256 = runtime::get_named_arg(AMOUNT);
-    let allowances_uref = get_allowances_uref();
-    let current_allowance = read_allowance_from(allowances_uref, owner, spender);
+    let amount: U256 = runtime::get_named_arg(ARG_AMOUNT);
+    let current_allowance = read_allowance_from(caller, spender);
     let new_allowance = current_allowance.saturating_sub(amount);
-    write_allowance_to(allowances_uref, owner, spender, new_allowance);
+    write_allowance_to(caller, spender, new_allowance);
     events::record_event_dictionary(Event::DecreaseAllowance(DecreaseAllowance {
-        owner,
+        owner: caller,
         spender,
         decr_by: amount,
         allowance: new_allowance,
@@ -156,19 +145,17 @@ pub extern "C" fn decrease_allowance() {
 
 #[no_mangle]
 pub extern "C" fn increase_allowance() {
-    let owner = utils::get_immediate_caller_key()
-        .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
-    let spender: Key = runtime::get_named_arg(SPENDER);
-    if spender == owner {
+    let caller = get_immediate_caller();
+    let spender: Key = runtime::get_named_arg(ARG_SPENDER);
+    if spender == caller {
         revert(Cep18Error::CannotTargetSelfUser);
     }
-    let amount: U256 = runtime::get_named_arg(AMOUNT);
-    let allowances_uref = get_allowances_uref();
-    let current_allowance = read_allowance_from(allowances_uref, owner, spender);
+    let amount: U256 = runtime::get_named_arg(ARG_AMOUNT);
+    let current_allowance = read_allowance_from(caller, spender);
     let new_allowance = current_allowance.saturating_add(amount);
-    write_allowance_to(allowances_uref, owner, spender, new_allowance);
+    write_allowance_to(caller, spender, new_allowance);
     events::record_event_dictionary(Event::IncreaseAllowance(IncreaseAllowance {
-        owner,
+        owner: caller,
         spender,
         allowance: new_allowance,
         inc_by: amount,
@@ -177,16 +164,15 @@ pub extern "C" fn increase_allowance() {
 
 #[no_mangle]
 pub extern "C" fn transfer() {
-    let sender = utils::get_immediate_caller_key()
-        .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
-    let recipient: Key = runtime::get_named_arg(RECIPIENT);
-    if sender == recipient {
+    let caller = get_immediate_caller();
+    let recipient: Key = runtime::get_named_arg(ARG_RECIPIENT);
+    if caller == recipient {
         revert(Cep18Error::CannotTargetSelfUser);
     }
-    let amount: U256 = runtime::get_named_arg(AMOUNT);
-    transfer_balance(sender, recipient, amount).unwrap_or_revert();
+    let amount: U256 = runtime::get_named_arg(ARG_AMOUNT);
+    transfer_balance(caller, recipient, amount).unwrap_or_revert();
     events::record_event_dictionary(Event::Transfer(Transfer {
-        sender,
+        sender: caller,
         recipient,
         amount,
     }))
@@ -194,28 +180,26 @@ pub extern "C" fn transfer() {
 
 #[no_mangle]
 pub extern "C" fn transfer_from() {
-    let spender = utils::get_immediate_caller_key()
-        .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
-    let recipient: Key = runtime::get_named_arg(RECIPIENT);
-    let owner: Key = runtime::get_named_arg(OWNER);
+    let caller = get_immediate_caller();
+    let recipient: Key = runtime::get_named_arg(ARG_RECIPIENT);
+    let owner: Key = runtime::get_named_arg(ARG_OWNER);
     if owner == recipient {
         revert(Cep18Error::CannotTargetSelfUser);
     }
-    let amount: U256 = runtime::get_named_arg(AMOUNT);
+    let amount: U256 = runtime::get_named_arg(ARG_AMOUNT);
     if amount.is_zero() {
         return;
     }
 
-    let allowances_uref = get_allowances_uref();
-    let spender_allowance: U256 = read_allowance_from(allowances_uref, owner, spender);
+    let spender_allowance: U256 = read_allowance_from(owner, caller);
     let new_spender_allowance = spender_allowance
         .checked_sub(amount)
         .unwrap_or_revert_with(Cep18Error::InsufficientAllowance);
 
     transfer_balance(owner, recipient, amount).unwrap_or_revert();
-    write_allowance_to(allowances_uref, owner, spender, new_spender_allowance);
+    write_allowance_to(owner, caller, new_spender_allowance);
     events::record_event_dictionary(Event::TransferFrom(TransferFrom {
-        spender,
+        spender: caller,
         owner,
         recipient,
         amount,
@@ -224,32 +208,31 @@ pub extern "C" fn transfer_from() {
 
 #[no_mangle]
 pub extern "C" fn mint() {
-    if 0 == read_from::<u8>(ENABLE_MINT_BURN) {
+    if 0 == get_stored_value::<u8>(ARG_ENABLE_MINT_BURN) {
         revert(Cep18Error::MintBurnDisabled);
     }
 
     sec_check(vec![SecurityBadge::Admin, SecurityBadge::Minter]);
 
-    let owner: Key = runtime::get_named_arg(OWNER);
-    let amount: U256 = runtime::get_named_arg(AMOUNT);
+    let owner: Key = runtime::get_named_arg(ARG_OWNER);
+    let amount: U256 = runtime::get_named_arg(ARG_AMOUNT);
 
-    let balances_uref = get_balances_uref();
-    let total_supply_uref = get_total_supply_uref();
     let new_balance = {
-        let balance = read_balance_from(balances_uref, owner);
+        let balance = read_balance_from(owner);
         balance
             .checked_add(amount)
             .unwrap_or_revert_with(Cep18Error::Overflow)
     };
     let new_total_supply = {
-        let total_supply: U256 = read_total_supply_from(total_supply_uref);
+        let total_supply: U256 = get_stored_value(ARG_TOTAL_SUPPLY);
         total_supply
             .checked_add(amount)
             .ok_or(Cep18Error::Overflow)
             .unwrap_or_revert()
     };
-    write_balance_to(balances_uref, owner, new_balance);
-    write_total_supply_to(total_supply_uref, new_total_supply);
+
+    write_balance_to(owner, new_balance);
+    write_total_supply_to(new_total_supply);
 
     events::record_event_dictionary(Event::Mint(Mint {
         recipient: owner,
@@ -259,37 +242,34 @@ pub extern "C" fn mint() {
 
 #[no_mangle]
 pub extern "C" fn burn() {
-    if 0 == read_from::<u8>(ENABLE_MINT_BURN) {
+    if 0 == get_stored_value::<u8>(ARG_ENABLE_MINT_BURN) {
         revert(Cep18Error::MintBurnDisabled);
     }
 
-    let owner: Key = runtime::get_named_arg(OWNER);
-
-    if owner
-        != get_immediate_caller_key()
-            .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller)
-    {
+    let owner: Key = runtime::get_named_arg(ARG_OWNER);
+    let caller = get_immediate_caller();
+    if owner != caller {
         revert(Cep18Error::InvalidBurnTarget);
     }
 
-    let amount: U256 = runtime::get_named_arg(AMOUNT);
-    let balances_uref = get_balances_uref();
-    let total_supply_uref = get_total_supply_uref();
+    let amount: U256 = runtime::get_named_arg(ARG_AMOUNT);
     let new_balance = {
-        let balance = read_balance_from(balances_uref, owner);
+        let balance = read_balance_from(owner);
         balance
             .checked_sub(amount)
             .unwrap_or_revert_with(Cep18Error::InsufficientBalance)
     };
     let new_total_supply = {
-        let total_supply = read_total_supply_from(total_supply_uref);
+        let total_supply: U256 = get_stored_value(ARG_TOTAL_SUPPLY);
         total_supply
             .checked_sub(amount)
             .ok_or(Cep18Error::Overflow)
             .unwrap_or_revert_with(Cep18Error::FailedToChangeTotalSupply)
     };
-    write_balance_to(balances_uref, owner, new_balance);
-    write_total_supply_to(total_supply_uref, new_total_supply);
+
+    write_balance_to(owner, new_balance);
+    write_total_supply_to(new_total_supply);
+
     events::record_event_dictionary(Event::Burn(Burn { owner, amount }))
 }
 
@@ -297,29 +277,32 @@ pub extern "C" fn burn() {
 /// later calls will cause it to revert.
 #[no_mangle]
 pub extern "C" fn init() {
-    if get_key(ALLOWANCES).is_some() {
+    if get_key(DICT_ALLOWANCES).is_some() {
         revert(Cep18Error::AlreadyInitialized);
     }
-    let package_hash = get_named_arg::<Key>(PACKAGE_HASH);
-    put_key(PACKAGE_HASH, package_hash);
+    let package_hash = get_named_arg::<Key>(ARG_PACKAGE_HASH);
+    put_key(ARG_PACKAGE_HASH, package_hash);
 
-    let contract_hash = get_named_arg::<Key>(CONTRACT_HASH);
-    put_key(CONTRACT_HASH, contract_hash);
+    let contract_hash = get_named_arg::<Key>(ARG_CONTRACT_HASH);
+    put_key(ARG_CONTRACT_HASH, contract_hash);
 
-    storage::new_dictionary(ALLOWANCES).unwrap_or_revert_with(Cep18Error::FailedToCreateDictionary);
-    let balances_uref = storage::new_dictionary(BALANCES)
+    storage::new_dictionary(DICT_ALLOWANCES)
         .unwrap_or_revert_with(Cep18Error::FailedToCreateDictionary);
-    let initial_supply = runtime::get_named_arg(TOTAL_SUPPLY);
-    let caller = get_caller();
-    let initial_balance_holder_key = Key::Account(caller);
+    storage::new_dictionary(DICT_BALANCES)
+        .unwrap_or_revert_with(Cep18Error::FailedToCreateDictionary);
+    let initial_supply = runtime::get_named_arg(ARG_TOTAL_SUPPLY);
 
-    write_balance_to(balances_uref, initial_balance_holder_key, initial_supply);
+    let caller = get_immediate_caller();
 
-    let security_badges_dict = storage::new_dictionary(SECURITY_BADGES)
+    let initial_balance_holder_key = caller;
+
+    write_balance_to(initial_balance_holder_key, initial_supply);
+
+    let security_badges_dict = storage::new_dictionary(DICT_SECURITY_BADGES)
         .unwrap_or_revert_with(Cep18Error::FailedToCreateDictionary);
     dictionary_put(
         security_badges_dict,
-        &general_purpose::STANDARD.encode(
+        &base64_encode(
             initial_balance_holder_key
                 .to_bytes()
                 .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes),
@@ -332,7 +315,7 @@ pub extern "C" fn init() {
     let minter_list: Option<Vec<Key>> =
         get_optional_named_arg_with_user_errors(MINTER_LIST, Cep18Error::InvalidMinterList);
 
-    let events_mode: EventsMode = EventsMode::try_from(get_named_arg::<u8>(EVENTS_MODE))
+    let events_mode: EventsMode = EventsMode::try_from(get_named_arg::<u8>(ARG_EVENTS_MODE))
         .unwrap_or_revert_with(Cep18Error::InvalidEventsMode);
 
     if EventsMode::CES == events_mode {
@@ -343,7 +326,7 @@ pub extern "C" fn init() {
         for minter in minter_list {
             dictionary_put(
                 security_badges_dict,
-                &general_purpose::STANDARD.encode(
+                &base64_encode(
                     minter
                         .to_bytes()
                         .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes),
@@ -356,7 +339,7 @@ pub extern "C" fn init() {
         for admin in admin_list {
             dictionary_put(
                 security_badges_dict,
-                &general_purpose::STANDARD.encode(
+                &base64_encode(
                     admin
                         .to_bytes()
                         .unwrap_or_revert_with(Cep18Error::FailedToConvertBytes),
@@ -380,7 +363,7 @@ pub extern "C" fn init() {
 /// Beware: do not remove the last Admin because that will lock out all admin functionality.
 #[no_mangle]
 pub extern "C" fn change_security() {
-    if 0 == read_from::<u8>(ENABLE_MINT_BURN) {
+    if 0 == get_stored_value::<u8>(ARG_ENABLE_MINT_BURN) {
         revert(Cep18Error::MintBurnDisabled);
     }
     sec_check(vec![SecurityBadge::Admin]);
@@ -408,11 +391,10 @@ pub extern "C" fn change_security() {
         }
     }
 
-    let caller = get_immediate_caller_key()
-        .unwrap_or_revert_with(Cep18Error::FailedToRetrieveImmediateCaller);
+    let caller = get_immediate_caller();
     badge_map.remove(&caller);
 
-    utils::change_sec_badge(&badge_map);
+    change_sec_badge(&badge_map);
     events::record_event_dictionary(Event::ChangeSecurity(ChangeSecurity {
         admin: caller,
         sec_change_map: badge_map,
@@ -422,17 +404,17 @@ pub extern "C" fn change_security() {
 #[no_mangle]
 fn change_events_mode() {
     sec_check(vec![SecurityBadge::Admin]);
-    let events_mode: EventsMode = EventsMode::try_from(get_named_arg::<u8>(EVENTS_MODE))
+    let events_mode: EventsMode = EventsMode::try_from(get_named_arg::<u8>(ARG_EVENTS_MODE))
         .unwrap_or_revert_with(Cep18Error::InvalidEventsMode);
-    let old_events_mode: EventsMode = EventsMode::try_from(read_from::<u8>(EVENTS_MODE))
+    let old_events_mode: EventsMode = EventsMode::try_from(get_stored_value::<u8>(ARG_EVENTS_MODE))
         .unwrap_or_revert_with(Cep18Error::InvalidEventsMode);
     if events_mode == old_events_mode {
         revert(Cep18Error::UnchangedEventsMode);
     }
     let events_mode_u8 = events_mode as u8;
-    put_key(EVENTS_MODE, storage::new_uref(events_mode_u8).into());
+    put_key(ARG_EVENTS_MODE, storage::new_uref(events_mode_u8).into());
 
-    if get_key(casper_event_standard::EVENTS_DICT).is_none() {
+    if get_key(EVENTS_DICT).is_none() {
         init_events()
     }
     events::record_event_dictionary(Event::ChangeEventsMode(ChangeEventsMode {
@@ -442,7 +424,11 @@ fn change_events_mode() {
 
 pub fn upgrade(name: &str) {
     let entry_points = generate_entry_points();
-    let old_contract_package_hash = match runtime::get_key(&format!("{HASH_KEY_NAME_PREFIX}{name}"))
+
+    let package_key_name = &format!("{PREFIX_CEP18}_{PREFIX_CONTRACT_PACKAGE_NAME}_{name}");
+    let contract_key_name = &format!("{PREFIX_CEP18}_{PREFIX_CONTRACT_NAME}_{name}");
+
+    let old_contract_package_hash = match runtime::get_key(package_key_name)
         .unwrap_or_revert_with(Cep18Error::FailedToGetOldPackageKey)
     {
         Key::Hash(contract_hash) => contract_hash,
@@ -452,7 +438,7 @@ pub fn upgrade(name: &str) {
     };
     let contract_package_hash = PackageHash::new(old_contract_package_hash);
 
-    let previous_contract_hash = match runtime::get_key(&format!("{CONTRACT_NAME_PREFIX}{name}"))
+    let previous_contract_hash = match runtime::get_key(contract_key_name)
         .unwrap_or_revert_with(Cep18Error::FailedToGetOldContractHashKey)
     {
         Key::Hash(contract_hash) => contract_hash,
@@ -461,20 +447,22 @@ pub fn upgrade(name: &str) {
     };
     let converted_previous_contract_hash = AddressableEntityHash::new(previous_contract_hash);
 
-    let events_mode =
-        get_optional_named_arg_with_user_errors::<u8>(EVENTS_MODE, Cep18Error::InvalidEventsMode);
+    let events_mode = get_optional_named_arg_with_user_errors::<u8>(
+        ARG_EVENTS_MODE,
+        Cep18Error::InvalidEventsMode,
+    );
 
     let mut message_topics = BTreeMap::new();
-    match get_key(CONDOR) {
+    match get_key(ARG_CONDOR) {
         Some(_) => {}
         None => {
-            message_topics.insert(EVENTS.to_string(), MessageTopicOperation::Add);
-            put_key(CONDOR, storage::new_uref(CONDOR).into());
+            message_topics.insert(ARG_EVENTS.to_string(), MessageTopicOperation::Add);
+            put_key(ARG_CONDOR, storage::new_uref(ARG_CONDOR).into());
         }
     }
 
     let mut named_keys = NamedKeys::new();
-    named_keys.insert(CONDOR.to_string(), storage::new_uref(CONDOR).into());
+    named_keys.insert(ARG_CONDOR.to_string(), storage::new_uref(ARG_CONDOR).into());
 
     let (contract_hash, contract_version) = storage::add_contract_version(
         contract_package_hash.into(),
@@ -491,14 +479,11 @@ pub fn upgrade(name: &str) {
 
     // migrate old ContractPackageHash as PackageHash so it's stored in a uniform format with the
     // new `new_contract` implementation
-    runtime::put_key(
-        &format!("{HASH_KEY_NAME_PREFIX}{name}"),
-        contract_package_hash.into(),
-    );
+    runtime::put_key(package_key_name, contract_package_hash.into());
 
     // ContractHash in previous versions, now AddressableEntityHash
     runtime::put_key(
-        &format!("{CONTRACT_NAME_PREFIX}{name}"),
+        &format!("{PREFIX_CEP18}_{PREFIX_CONTRACT_NAME}_{name}"),
         Key::contract_entity_key(contract_hash.into()),
     );
 
@@ -508,27 +493,27 @@ pub fn upgrade(name: &str) {
     );
 
     runtime::put_key(
-        &format!("{CONTRACT_VERSION_PREFIX}{name}"),
+        &format!("{PREFIX_CEP18}_{PREFIX_CONTRACT_VERSION}_{name}"),
         storage::new_uref(contract_version_key.to_string()).into(),
     );
 
     if let Some(events_mode_u8) = events_mode {
         call_contract::<()>(
             contract_hash,
-            CHANGE_EVENTS_MODE_ENTRY_POINT_NAME,
+            ENTRY_POINT_CHANGE_EVENTS_MODE,
             runtime_args! {
-                EVENTS_MODE => events_mode_u8,
+                ARG_EVENTS_MODE => events_mode_u8,
             },
         );
     }
 }
 
 pub fn install_contract(name: &str) {
-    let symbol: String = runtime::get_named_arg(SYMBOL);
-    let decimals: u8 = runtime::get_named_arg(DECIMALS);
-    let total_supply: U256 = runtime::get_named_arg(TOTAL_SUPPLY);
+    let symbol: String = runtime::get_named_arg(ARG_SYMBOL);
+    let decimals: u8 = runtime::get_named_arg(ARG_DECIMALS);
+    let total_supply: U256 = runtime::get_named_arg(ARG_TOTAL_SUPPLY);
     let events_mode: u8 =
-        get_optional_named_arg_with_user_errors(EVENTS_MODE, Cep18Error::InvalidEventsMode)
+        get_optional_named_arg_with_user_errors(ARG_EVENTS_MODE, Cep18Error::InvalidEventsMode)
             .unwrap_or(0u8);
 
     let admin_list: Option<Vec<Key>> =
@@ -536,24 +521,26 @@ pub fn install_contract(name: &str) {
     let minter_list: Option<Vec<Key>> =
         get_optional_named_arg_with_user_errors(MINTER_LIST, Cep18Error::InvalidMinterList);
 
-    let enable_mint_burn: u8 =
-        get_optional_named_arg_with_user_errors(ENABLE_MINT_BURN, Cep18Error::InvalidEnableMBFlag)
-            .unwrap_or(0);
+    let enable_mint_burn: u8 = get_optional_named_arg_with_user_errors(
+        ARG_ENABLE_MINT_BURN,
+        Cep18Error::InvalidEnableMBFlag,
+    )
+    .unwrap_or(0);
 
     let mut named_keys = NamedKeys::new();
-    named_keys.insert(NAME.to_string(), storage::new_uref(name).into());
-    named_keys.insert(SYMBOL.to_string(), storage::new_uref(symbol).into());
-    named_keys.insert(DECIMALS.to_string(), storage::new_uref(decimals).into());
+    named_keys.insert(ARG_NAME.to_string(), storage::new_uref(name).into());
+    named_keys.insert(ARG_SYMBOL.to_string(), storage::new_uref(symbol).into());
+    named_keys.insert(ARG_DECIMALS.to_string(), storage::new_uref(decimals).into());
     named_keys.insert(
-        TOTAL_SUPPLY.to_string(),
+        ARG_TOTAL_SUPPLY.to_string(),
         storage::new_uref(total_supply).into(),
     );
     named_keys.insert(
-        EVENTS_MODE.to_string(),
+        ARG_EVENTS_MODE.to_string(),
         storage::new_uref(events_mode).into(),
     );
     named_keys.insert(
-        ENABLE_MINT_BURN.to_string(),
+        ARG_ENABLE_MINT_BURN.to_string(),
         storage::new_uref(enable_mint_burn).into(),
     );
 
@@ -563,24 +550,29 @@ pub fn install_contract(name: &str) {
     if [EventsMode::Native, EventsMode::NativeBytes]
         .contains(&events_mode.try_into().unwrap_or_default())
     {
-        message_topics.insert(EVENTS.to_string(), MessageTopicOperation::Add);
+        message_topics.insert(ARG_EVENTS.to_string(), MessageTopicOperation::Add);
     };
 
-    let hash_key_name = format!("{HASH_KEY_NAME_PREFIX}{name}");
+    let package_hash_name = format!("{PREFIX_CEP18}_{PREFIX_CONTRACT_PACKAGE_NAME}_{name}");
+
     let (contract_hash, contract_version) = storage::new_contract(
         entry_points,
         Some(named_keys),
-        Some(hash_key_name.clone()),
-        Some(format!("{ACCESS_KEY_NAME_PREFIX}{name}")),
+        Some(package_hash_name.clone()),
+        Some(format!("{PREFIX_CEP18}_{PREFIX_ACCESS_KEY_NAME}_{name}")),
         Some(message_topics),
     );
-    let package_hash =
-        runtime::get_key(&hash_key_name).unwrap_or_revert_with(Cep18Error::FailedToGetPackageKey);
+
+    let package_hash = runtime::get_key(&package_hash_name)
+        .unwrap_or_revert_with(Cep18Error::FailedToGetPackageKey);
 
     let contract_hash_key = Key::contract_entity_key(contract_hash.into());
 
     // Store contract_hash and contract_version under the keys CONTRACT_NAME and CONTRACT_VERSION
-    runtime::put_key(&format!("{CONTRACT_NAME_PREFIX}{name}"), contract_hash_key);
+    runtime::put_key(
+        &format!("{PREFIX_CEP18}_{PREFIX_CONTRACT_NAME}_{name}"),
+        contract_hash_key,
+    );
 
     let contract_version_key = ContractVersionKey::new(
         ProtocolVersionMajor::from(PROTOCOL_VERSION),
@@ -588,12 +580,12 @@ pub fn install_contract(name: &str) {
     );
 
     runtime::put_key(
-        &format!("{CONTRACT_VERSION_PREFIX}{name}"),
+        &format!("{PREFIX_CEP18}_{PREFIX_CONTRACT_VERSION}_{name}"),
         storage::new_uref(contract_version_key.to_string()).into(),
     );
-    
+
     // Call contract to initialize it
-    let mut init_args = runtime_args! {TOTAL_SUPPLY => total_supply, PACKAGE_HASH => package_hash, CONTRACT_HASH => contract_hash_key, EVENTS_MODE => events_mode};
+    let mut init_args = runtime_args! {ARG_TOTAL_SUPPLY => total_supply, ARG_PACKAGE_HASH => package_hash, ARG_CONTRACT_HASH => contract_hash_key, ARG_EVENTS_MODE => events_mode};
 
     if let Some(admin_list) = admin_list {
         init_args
@@ -606,14 +598,14 @@ pub fn install_contract(name: &str) {
             .unwrap_or_revert_with(Cep18Error::FailedToInsertToSecurityList);
     }
 
-    put_key(CONDOR, storage::new_uref(CONDOR).into());
-    runtime::call_contract::<()>(contract_hash, INIT_ENTRY_POINT_NAME, init_args);
+    put_key(ARG_CONDOR, storage::new_uref(ARG_CONDOR).into());
+    runtime::call_contract::<()>(contract_hash, ENTRY_POINT_INIT, init_args);
 }
 
 #[no_mangle]
 pub extern "C" fn call() {
-    let name: String = runtime::get_named_arg(NAME);
-    match runtime::get_key(&format!("{ACCESS_KEY_NAME_PREFIX}{name}")) {
+    let name: String = runtime::get_named_arg(ARG_NAME);
+    match runtime::get_key(&format!("{PREFIX_CEP18}_{PREFIX_ACCESS_KEY_NAME}_{name}")) {
         Some(_) => {
             upgrade(&name);
         }

@@ -1,13 +1,17 @@
 //! Implementation of balances.
-use crate::{constants::BALANCES, error::Cep18Error, utils};
+use crate::{
+    constants::DICT_BALANCES,
+    error::Cep18Error,
+    utils::{base64_encode, get_dictionary_value_from_key, set_dictionary_value_for_key},
+};
 use alloc::string::String;
-use base64::{engine::general_purpose, Engine};
-use casper_contract::{contract_api::storage, unwrap_or_revert::UnwrapOrRevert};
-use casper_types::{bytesrepr::ToBytes, Key, URef, U256};
+use casper_contract::unwrap_or_revert::UnwrapOrRevert;
+use casper_types::{bytesrepr::ToBytes, Key, U256};
 
 /// Creates a dictionary item key for a dictionary item, by base64 encoding the Key argument
 /// since stringified Keys are too long to be used as dictionary keys.
 #[inline]
+/// ! TODO GR check hex::encode with utils::make_dictionary_item_key or else
 fn make_dictionary_item_key(owner: Key) -> String {
     let preimage = owner
         .to_bytes()
@@ -18,61 +22,47 @@ fn make_dictionary_item_key(owner: Key) -> String {
     // characters.
     // Even if the preimage increased in size we still have extra space but even in case of much
     // larger preimage we can switch to base85 which has ratio of 4:5.
-    general_purpose::STANDARD.encode(preimage)
-}
-
-/// Getter for the "balances" dictionary URef.
-pub(crate) fn get_balances_uref() -> URef {
-    utils::get_uref(BALANCES)
+    base64_encode(preimage)
 }
 
 /// Writes token balance of a specified account into a dictionary.
-pub(crate) fn write_balance_to(balances_uref: URef, address: Key, amount: U256) {
+pub fn write_balance_to(address: Key, amount: U256) {
     let dictionary_item_key = make_dictionary_item_key(address);
-    storage::dictionary_put(balances_uref, &dictionary_item_key, amount);
+    set_dictionary_value_for_key(DICT_BALANCES, &dictionary_item_key, &amount)
 }
 
 /// Reads token balance of a specified account.
 ///
 /// If a given account does not have balances in the system, then a 0 is returned.
-pub(crate) fn read_balance_from(balances_uref: URef, address: Key) -> U256 {
+pub fn read_balance_from(address: Key) -> U256 {
     let dictionary_item_key = make_dictionary_item_key(address);
-
-    storage::dictionary_get(balances_uref, &dictionary_item_key)
-        .unwrap_or_revert_with(Cep18Error::FailedToGetDictionaryValue)
-        .unwrap_or_default()
+    get_dictionary_value_from_key(DICT_BALANCES, &dictionary_item_key).unwrap_or_default()
 }
 
 /// Transfer tokens from the `sender` to the `recipient`.
 ///
-/// This function should not be used directly by contract's entrypoint as it does not validate the
-/// sender.
-pub(crate) fn transfer_balance(
-    sender: Key,
-    recipient: Key,
-    amount: U256,
-) -> Result<(), Cep18Error> {
+/// This function does not validate the sender nor recipient. Check sender and recipient before
+/// using this function.
+pub fn transfer_balance(sender: Key, recipient: Key, amount: U256) -> Result<(), Cep18Error> {
     if sender == recipient || amount.is_zero() {
         return Ok(());
     }
-
-    let balances_uref = get_balances_uref();
     let new_sender_balance = {
-        let sender_balance = read_balance_from(balances_uref, sender);
+        let sender_balance = read_balance_from(sender);
         sender_balance
             .checked_sub(amount)
             .ok_or(Cep18Error::InsufficientBalance)?
     };
 
     let new_recipient_balance = {
-        let recipient_balance = read_balance_from(balances_uref, recipient);
+        let recipient_balance = read_balance_from(recipient);
         recipient_balance
             .checked_add(amount)
             .ok_or(Cep18Error::Overflow)?
     };
 
-    write_balance_to(balances_uref, sender, new_sender_balance);
-    write_balance_to(balances_uref, recipient, new_recipient_balance);
+    write_balance_to(sender, new_sender_balance);
+    write_balance_to(recipient, new_recipient_balance);
 
     Ok(())
 }

@@ -1,6 +1,5 @@
+use crate::error::Cep18Error;
 use core::convert::TryFrom;
-
-use crate::Cep18Error;
 
 #[repr(u8)]
 #[derive(PartialEq, Eq, Default, Copy, Clone)]

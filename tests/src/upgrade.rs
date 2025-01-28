@@ -1,15 +1,14 @@
-use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
-use casper_types::{runtime_args, Key, U256};
-
 use crate::utility::{
     constants::{
-        ARG_DECIMALS, ARG_NAME, ARG_SYMBOL, ARG_TOTAL_SUPPLY, CEP18_CONTRACT_WASM,
-        CEP18_TOKEN_CONTRACT_VERSION_KEY, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL,
-        TOKEN_TOTAL_SUPPLY,
+        CEP18_CONTRACT_WASM, CEP18_TEST_TOKEN_CONTRACT_VERSION, TOKEN_DECIMALS, TOKEN_NAME,
+        TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
     },
     installer_request_builders::setup,
     support::query_stored_value,
 };
+use casper_engine_test_support::{ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
+use casper_types::{runtime_args, Key, U256};
+use cep18::constants::{ARG_DECIMALS, ARG_NAME, ARG_SYMBOL, ARG_TOTAL_SUPPLY};
 
 #[test]
 fn should_upgrade_contract_version() {
@@ -18,7 +17,7 @@ fn should_upgrade_contract_version() {
     let version_0_string: String = query_stored_value(
         &builder,
         Key::from(*DEFAULT_ACCOUNT_ADDR),
-        CEP18_TOKEN_CONTRACT_VERSION_KEY,
+        CEP18_TEST_TOKEN_CONTRACT_VERSION,
     );
 
     let parts: Vec<&str> = version_0_string.split('.').collect();
@@ -52,7 +51,7 @@ fn should_upgrade_contract_version() {
     let version_1_string: String = query_stored_value(
         &builder,
         Key::from(*DEFAULT_ACCOUNT_ADDR),
-        CEP18_TOKEN_CONTRACT_VERSION_KEY,
+        CEP18_TEST_TOKEN_CONTRACT_VERSION,
     );
 
     // Split into major and minor parts

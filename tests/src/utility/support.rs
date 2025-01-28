@@ -1,5 +1,11 @@
+use std::fmt::Debug;
+
 use casper_engine_test_support::LmdbWasmTestBuilder;
-use casper_types::{bytesrepr::FromBytes, CLTyped, EntityAddr, Key};
+use casper_event_standard::EVENTS_DICT;
+use casper_types::{
+    bytesrepr::{Bytes, FromBytes},
+    AddressableEntityHash, CLTyped, EntityAddr, Key,
+};
 
 pub(crate) fn get_dictionary_value_from_key<T: CLTyped + FromBytes>(
     builder: &LmdbWasmTestBuilder,
@@ -57,4 +63,20 @@ pub(crate) fn query_stored_value<T: CLTyped + FromBytes>(
         .expect("must have cl value");
 
     cl_value.into_t::<T>().expect("must get value")
+}
+
+pub fn get_event<T: FromBytes + CLTyped + Debug>(
+    builder: &mut LmdbWasmTestBuilder,
+    contract_hash: &AddressableEntityHash,
+    index: u32,
+) -> T {
+    let bytes: Bytes = get_dictionary_value_from_key(
+        builder,
+        &Key::contract_entity_key(*contract_hash),
+        EVENTS_DICT,
+        &index.to_string(),
+    );
+    let (event, bytes) = T::from_bytes(&bytes).unwrap();
+    assert!(bytes.is_empty());
+    event
 }

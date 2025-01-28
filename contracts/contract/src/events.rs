@@ -1,32 +1,40 @@
-use core::convert::TryFrom;
-
-use alloc::{collections::BTreeMap, string::String};
-use casper_contract::{contract_api::runtime, unwrap_or_revert::UnwrapOrRevert};
-use casper_types::{bytesrepr::Bytes, contract_messages::MessagePayload, Key, U256};
-
+use crate::security::SecurityBadge;
+#[cfg(feature = "contract-support")]
+use crate::utils::get_stored_value;
+#[cfg(feature = "contract-support")]
 use crate::{
-    constants::{EVENTS, EVENTS_MODE},
+    constants::{ARG_EVENTS, ARG_EVENTS_MODE},
+    error::Cep18Error,
     modalities::EventsMode,
-    utils::{read_from, SecurityBadge},
-    Cep18Error,
 };
-
-use casper_event_standard::{emit, Event, Schemas};
+use alloc::collections::BTreeMap;
+#[cfg(feature = "contract-support")]
+use alloc::string::String;
+#[cfg(feature = "contract-support")]
+use casper_contract::{
+    contract_api::runtime::{emit_message, get_key},
+    unwrap_or_revert::UnwrapOrRevert,
+};
+use casper_event_standard::Event;
+#[cfg(feature = "contract-support")]
+use casper_event_standard::{emit, init, Schemas, EVENTS_DICT};
+#[cfg(feature = "contract-support")]
+use casper_types::{bytesrepr::Bytes, contract_messages::MessagePayload};
+use casper_types::{Key, U256};
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "contract-support")]
 pub fn record_event_dictionary(event: Event) {
-    let events_mode: EventsMode = EventsMode::try_from(read_from::<u8>(EVENTS_MODE))
+    let events_mode: EventsMode = EventsMode::try_from(get_stored_value::<u8>(ARG_EVENTS_MODE))
         .unwrap_or_revert_with(Cep18Error::InvalidEventsMode);
 
     match events_mode {
         EventsMode::NoEvents => {}
         EventsMode::CES => ces(event),
-        EventsMode::Native => {
-            runtime::emit_message(EVENTS, &event.to_json().into()).unwrap_or_revert()
-        }
+        EventsMode::Native => emit_message(ARG_EVENTS, &event.to_json().into()).unwrap_or_revert(),
         EventsMode::NativeBytes => {
             let payload = MessagePayload::Bytes(Bytes::from(event.to_json().as_bytes()));
-            runtime::emit_message(EVENTS, &payload).unwrap_or_revert()
+            emit_message(ARG_EVENTS, &payload).unwrap_or_revert()
         }
     }
 }
@@ -45,10 +53,25 @@ pub enum Event {
     ChangeEventsMode(ChangeEventsMode),
 }
 
+impl Event {
+    #[cfg(feature = "contract-support")]
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(self)
+            .map_err(|_| Cep18Error::FailedToConvertToJson)
+            .unwrap_or_revert()
+    }
+}
+
 #[derive(Serialize, Deserialize, Event, Debug, PartialEq, Eq)]
 pub struct Mint {
     pub recipient: Key,
     pub amount: U256,
+}
+
+impl Mint {
+    pub fn new(recipient: Key, amount: U256) -> Self {
+        Self { recipient, amount }
+    }
 }
 
 #[derive(Serialize, Deserialize, Event, Debug, PartialEq, Eq)]
@@ -106,6 +129,7 @@ pub struct ChangeEventsMode {
     pub events_mode: u8,
 }
 
+#[cfg(feature = "contract-support")]
 fn ces(event: Event) {
     match event {
         Event::Mint(ev) => emit(ev),
@@ -120,13 +144,12 @@ fn ces(event: Event) {
     }
 }
 
+#[cfg(feature = "contract-support")]
 pub fn init_events() {
-    let events_mode: EventsMode = EventsMode::try_from(read_from::<u8>(EVENTS_MODE))
+    let events_mode: EventsMode = EventsMode::try_from(get_stored_value::<u8>(ARG_EVENTS_MODE))
         .unwrap_or_revert_with(Cep18Error::InvalidEventsMode);
 
-    if EventsMode::CES == events_mode
-        && runtime::get_key(casper_event_standard::EVENTS_DICT).is_none()
-    {
+    if EventsMode::CES == events_mode && get_key(EVENTS_DICT).is_none() {
         let schemas = Schemas::new()
             .with::<Mint>()
             .with::<Burn>()
@@ -137,14 +160,6 @@ pub fn init_events() {
             .with::<TransferFrom>()
             .with::<ChangeSecurity>()
             .with::<ChangeEventsMode>();
-        casper_event_standard::init(schemas);
-    }
-}
-
-impl Event {
-    pub fn to_json(&self) -> String {
-        serde_json::to_string(self)
-            .map_err(|_| Cep18Error::FailedToConvertToJson)
-            .unwrap_or_revert()
+        init(schemas);
     }
 }

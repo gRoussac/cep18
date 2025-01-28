@@ -5,15 +5,18 @@ use casper_fixtures::LmdbFixtureState;
 use casper_types::{
     runtime_args, AddressableEntityHash, EraId, Key, ProtocolVersion, RuntimeArgs, U256,
 };
+use cep18::constants::{
+    ARG_AMOUNT, ARG_DECIMALS, ARG_ENABLE_MINT_BURN, ARG_EVENTS, ARG_EVENTS_MODE, ARG_NAME,
+    ARG_OWNER, ARG_SYMBOL, ARG_TOTAL_SUPPLY, ENTRY_POINT_MINT,
+};
 
 use crate::utility::{
     constants::{
-        AMOUNT, ARG_DECIMALS, ARG_NAME, ARG_SYMBOL, ARG_TOTAL_SUPPLY, CEP18_CONTRACT_WASM,
-        CEP18_TEST_CONTRACT_WASM, CEP18_TOKEN_CONTRACT_KEY, CEP18_TOKEN_CONTRACT_VERSION_KEY,
-        EVENTS, EVENTS_MODE, METHOD_MINT, OWNER, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_OWNER_ADDRESS_1,
-        TOKEN_OWNER_ADDRESS_1_OLD, TOKEN_OWNER_AMOUNT_1, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
+        AMOUNT_1, CEP18_CONTRACT_WASM, CEP18_TEST_CONTRACT_WASM, CEP18_TEST_TOKEN_CONTRACT_NAME,
+        CEP18_TEST_TOKEN_CONTRACT_VERSION, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL,
+        TOKEN_TOTAL_SUPPLY,
     },
-    installer_request_builders::cep18_check_balance_of,
+    installer_request_builders::{cep18_check_balance_of, get_test_account},
     message_handlers::{message_summary, message_topic},
     support::query_stored_value,
 };
@@ -58,7 +61,7 @@ pub fn get_contract_hash_v1_binary(builder: &LmdbWasmTestBuilder) -> Addressable
     let account_named_keys = account.named_keys();
 
     let cep18_token = account_named_keys
-        .get(CEP18_TOKEN_CONTRACT_KEY)
+        .get(CEP18_TEST_TOKEN_CONTRACT_NAME)
         .and_then(|key| key.into_hash_addr())
         .map(AddressableEntityHash::new)
         .expect("should have contract hash");
@@ -73,7 +76,7 @@ pub fn get_contract_hash_v2_binary(builder: &LmdbWasmTestBuilder) -> Addressable
     let account_named_keys = account.named_keys();
 
     let cep18_token = account_named_keys
-        .get(CEP18_TOKEN_CONTRACT_KEY)
+        .get(CEP18_TEST_TOKEN_CONTRACT_NAME)
         .and_then(|key| key.into_entity_hash())
         .expect("should have contract hash");
 
@@ -91,11 +94,12 @@ fn should_be_able_to_call_1x_contract_in_2x_execution_engine() {
 
     let cep18_token = get_contract_hash_v1_binary(&builder);
 
+    let (account_user_1_key, _, _) = get_test_account("ACCOUNT_USER_1");
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
-        runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1_OLD, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
+        ENTRY_POINT_MINT,
+        runtime_args! {ARG_OWNER => account_user_1_key, ARG_AMOUNT => U256::from(AMOUNT_1)},
     )
     .build();
 
@@ -115,7 +119,7 @@ fn should_migrate_1_5_6_to_2_0_0_rc3() {
     let version_0_minor: u32 = query_stored_value(
         &builder,
         Key::from(*DEFAULT_ACCOUNT_ADDR),
-        CEP18_TOKEN_CONTRACT_VERSION_KEY,
+        CEP18_TEST_TOKEN_CONTRACT_VERSION,
     );
 
     // upgrade the contract itself using a binary built for the new engine
@@ -127,7 +131,7 @@ fn should_migrate_1_5_6_to_2_0_0_rc3() {
             ARG_SYMBOL => TOKEN_SYMBOL,
             ARG_DECIMALS => TOKEN_DECIMALS,
             ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-            EVENTS_MODE => 2_u8,
+            ARG_EVENTS_MODE => 2_u8,
         },
     )
     .build();
@@ -137,7 +141,7 @@ fn should_migrate_1_5_6_to_2_0_0_rc3() {
     let version_1_string: String = query_stored_value(
         &builder,
         Key::from(*DEFAULT_ACCOUNT_ADDR),
-        CEP18_TOKEN_CONTRACT_VERSION_KEY,
+        CEP18_TEST_TOKEN_CONTRACT_VERSION,
     );
 
     // Split into major and minor parts
@@ -160,13 +164,14 @@ fn should_migrate_1_5_6_to_2_0_0_rc3() {
     assert!(version_0_minor == version_1_minor);
 
     let cep18_contract_hash = get_contract_hash_v2_binary(&builder);
+    let (account_user_1_key, _, _) = get_test_account("ACCOUNT_USER_1");
 
     // mint some new tokens in cep-18
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_contract_hash,
-        METHOD_MINT,
-        runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
+        ENTRY_POINT_MINT,
+        runtime_args! {ARG_OWNER => account_user_1_key, ARG_AMOUNT => U256::from(AMOUNT_1)},
     )
     .build();
 
@@ -182,8 +187,8 @@ fn should_migrate_1_5_6_to_2_0_0_rc3() {
     builder.exec(test_contract).expect_success().commit();
 
     assert_eq!(
-        cep18_check_balance_of(&mut builder, &cep18_contract_hash, TOKEN_OWNER_ADDRESS_1),
-        U256::from(TOKEN_OWNER_AMOUNT_1),
+        cep18_check_balance_of(&mut builder, &cep18_contract_hash, account_user_1_key),
+        U256::from(AMOUNT_1),
     );
 }
 
@@ -202,7 +207,8 @@ fn should_have_native_events() {
             ARG_SYMBOL => TOKEN_SYMBOL,
             ARG_DECIMALS => TOKEN_DECIMALS,
             ARG_TOTAL_SUPPLY => U256::from(TOKEN_TOTAL_SUPPLY),
-            EVENTS_MODE => 3_u8,
+            ARG_EVENTS_MODE => 3_u8,
+            ARG_ENABLE_MINT_BURN => true
         },
     )
     .build();
@@ -218,13 +224,14 @@ fn should_have_native_events() {
         .last()
         .expect("should have at least one topic");
 
-    assert_eq!(topic_name, &EVENTS.to_string());
+    assert_eq!(topic_name, &ARG_EVENTS.to_string());
 
+    let (account_user_1_key, _, _) = get_test_account("ACCOUNT_USER_1");
     let mint_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         cep18_token,
-        METHOD_MINT,
-        runtime_args! {OWNER => TOKEN_OWNER_ADDRESS_1, AMOUNT => U256::from(TOKEN_OWNER_AMOUNT_1)},
+        ENTRY_POINT_MINT,
+        runtime_args! {ARG_OWNER => account_user_1_key, ARG_AMOUNT => U256::from(AMOUNT_1)},
     )
     .build();
 
