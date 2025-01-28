@@ -37,20 +37,20 @@ test: setup-test
 	cargo test -p tests --lib
 
 clippy:
-	cargo clippy --release -p cep18 --bins --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -- -D warnings
-	cargo clippy --release -p cep18 --lib --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -- -D warnings
-	cargo clippy --release -p cep18 --lib --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) --no-default-features -- -D warnings
-	cargo clippy -p cep18-test-contract --bins --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -- -D warnings
+	cargo +$(PINNED_TOOLCHAIN) clippy --release -p cep18 --bins --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -- -D warnings
+	cargo +$(PINNED_TOOLCHAIN) clippy --release -p cep18 --lib --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -- -D warnings
+	cargo +$(PINNED_TOOLCHAIN) clippy --release -p cep18 --lib --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) --no-default-features -- -D warnings
+	cargo +$(PINNED_TOOLCHAIN) clippy -p cep18-test-contract --bins --target wasm32-unknown-unknown $(CARGO_BUILD_FLAGS) -- -D warnings
 	cargo clippy -p tests --all-targets $(CARGO_BUILD_FLAGS) -- -D warnings
 
 format:
-	cargo fmt -p cep18
-	cargo fmt -p cep18-test-contract
+	cargo +$(PINNED_TOOLCHAIN) fmt -p cep18
+	cargo +$(PINNED_TOOLCHAIN) fmt -p cep18-test-contract
 	cargo fmt -p tests
 
 check-lint: clippy
-	cargo fmt -p cep18 -- --check
-	cargo fmt -p cep18-test-contract -- --check
+	cargo +$(PINNED_TOOLCHAIN) fmt -p cep18
+	cargo +$(PINNED_TOOLCHAIN) fmt -p cep18-test-contract
 	cargo fmt -p tests -- --check
 
 lint: clippy format
@@ -66,4 +66,4 @@ clean:
 cargo-update:
 	cargo update -p cep18
 	cargo update -p cep18-test-contract
-	cargo update -p tests	
+	cargo update -p tests
