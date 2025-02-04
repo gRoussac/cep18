@@ -2,8 +2,8 @@ import { CLKey, CLU256, CLValue } from 'casper-js-sdk';
 
 export type Event<E extends Record<string, CLValue>> = {
   name: string;
-  contractHash: `hash-${string}`;
-  contractPackageHash: `hash-${string}`;
+  contractHash: string;
+  contractPackageHash: string;
   data: E;
 };
 
@@ -12,7 +12,7 @@ export interface DeployInfo {
   timestamp: string;
 }
 
-export type WithDeployInfo<E> = E & { deployInfo: DeployInfo };
+export type WithDeployInfo<E> = E & { deployInfo: DeployInfo; };
 
 export type CEP18EventWithDeployInfo = WithDeployInfo<CEP18Event>;
 

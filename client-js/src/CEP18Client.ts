@@ -1,9 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 import { BigNumber, type BigNumberish } from '@ethersproject/bignumber';
 import { blake2b } from '@noble/hashes/blake2b';
 import {
   CasperServiceByJsonRPC,
-  type CLKeyParameters,
-  type CLPublicKey,
+  CLKey,
+  CLPublicKey,
   type CLU256,
   CLValueBuilder,
   CLValueParsers,
@@ -33,19 +38,35 @@ export default class CEP18Client extends TypedContract {
     super(nodeAddress, networkName);
   }
 
-  public setContractHash(
-    contractHash: `hash-${string}`,
-    contractPackageHash?: `hash-${string}`
-  ) {
-    this.contractClient.setContractHash(contractHash, contractPackageHash);
+  public setContractName(name: string) {
+    this.contractClient.setContractName(name);
   }
 
-  public get contractHash(): `hash-${string}` {
-    return this.contractClient.contractHash as `hash-${string}`;
+  public setContractHash(contractHash: string, contractPackageHash?: string) {
+    if (contractHash.startsWith('entity-contract-')) {
+      // condor contract
+      if (contractPackageHash && !contractPackageHash.startsWith('package-')) {
+        throw new Error('Invalid contract package hash');
+      }
+      this.contractClient.setContractHash(contractHash, contractPackageHash);
+      return;
+    } if (contractHash.startsWith('hash-')) {
+      // 1.x contract
+      if (contractPackageHash && !contractPackageHash.startsWith('hash-')) {
+        throw new Error('Invalid contract package hash');
+      }
+      this.contractClient.setContractHash(contractHash, contractPackageHash);
+      return;
+    }
+    throw new Error('Invalid contract hash');
   }
 
-  public get contractPackageHash(): `hash-${string}` {
-    return this.contractClient.contractPackageHash as `hash-${string}`;
+  public get contractHash(): string {
+    return this.contractClient.contractHash;
+  }
+
+  public get contractPackageHash(): string {
+    return this.contractClient.contractPackageHash;
   }
 
   /**
@@ -118,7 +139,7 @@ export default class CEP18Client extends TypedContract {
     signingKeys?: Keys.AsymmetricKey[]
   ): DeployUtil.Deploy {
     const runtimeArgs = RuntimeArgs.fromMap({
-      recipient: CLValueBuilder.key(args.recipient),
+      recipient: this.toClKey(args.recipient),
       amount: CLValueBuilder.u256(args.amount)
     });
 
@@ -131,6 +152,22 @@ export default class CEP18Client extends TypedContract {
       signingKeys
     );
   }
+
+  toClKey(pubKey: CLPublicKey): CLKey {
+    if (this.isLegacy()) {
+      return CLValueBuilder.key(pubKey);
+    }
+    return new CLKey(pubKey.toAccountHash());
+
+  }
+
+  public isLegacy(): boolean {
+    if (!this.contractClient.contractHash) {
+      return undefined; //
+    }
+    return this.contractClient.contractHash.startsWith('hash-');
+  }
+
 
   /**
    * Transfer tokens from the approved user to another user
@@ -390,7 +427,7 @@ export default class CEP18Client extends TypedContract {
    * @param account account info to get balance
    * @returns account's balance
    */
-  public async balanceOf(account: CLKeyParameters): Promise<BigNumber> {
+  public async balanceOf(account: CLPublicKey): Promise<BigNumber> {
     const keyBytes = CLValueParsers.toBytes(
       CLValueBuilder.key(account)
     ).unwrap();
@@ -412,7 +449,7 @@ export default class CEP18Client extends TypedContract {
       } else throw error;
     }
     return balance;
-  }
+  };
 
   /**
    * Returns approved amount from the owner
@@ -421,8 +458,8 @@ export default class CEP18Client extends TypedContract {
    * @returns approved amount
    */
   public async allowances(
-    owner: CLKeyParameters,
-    spender: CLKeyParameters
+    owner: CLPublicKey,
+    spender: CLPublicKey
   ): Promise<BigNumber> {
     const keyOwner = CLValueParsers.toBytes(CLValueBuilder.key(owner)).unwrap();
     const keySpender = CLValueParsers.toBytes(
@@ -456,21 +493,21 @@ export default class CEP18Client extends TypedContract {
       } else throw error;
     }
     return allowances;
-  }
+  };
 
   /**
    * Returns the name of the CEP-18 token.
    */
   public async name(): Promise<string> {
     return this.contractClient.queryContractData(['name']) as Promise<string>;
-  }
+  };
 
   /**
    * Returns the symbol of the CEP-18 token.
    */
   public async symbol(): Promise<string> {
     return this.contractClient.queryContractData(['symbol']) as Promise<string>;
-  }
+  };
 
   /**
    * Returns the decimals of the CEP-18 token.
@@ -479,7 +516,7 @@ export default class CEP18Client extends TypedContract {
     return this.contractClient.queryContractData([
       'decimals'
     ]) as Promise<BigNumber>;
-  }
+  };
 
   /**
    * Returns the total supply of the CEP-18 token.
@@ -488,7 +525,7 @@ export default class CEP18Client extends TypedContract {
     return this.contractClient.queryContractData([
       'total_supply'
     ]) as Promise<BigNumber>;
-  }
+  };
 
   /**
    * Returns the event mode of the CEP-18 token
@@ -499,7 +536,7 @@ export default class CEP18Client extends TypedContract {
     ])) as BigNumber;
     const u8res = internalValue.toNumber();
     return EVENTS_MODE[u8res] as keyof typeof EVENTS_MODE;
-  }
+  };
 
   /**
    * Returns `true` if mint and burn is enabled
@@ -510,7 +547,7 @@ export default class CEP18Client extends TypedContract {
     ])) as BigNumber;
     const u8res = internalValue.toNumber();
     return u8res !== 0;
-  }
+  };
 
   /**
    * Parse deploy result by given hash.
@@ -523,11 +560,13 @@ export default class CEP18Client extends TypedContract {
 
     const result = await casperClient.getDeployInfo(deployHash);
     if (
-      result.execution_results.length > 0 &&
-      result.execution_results[0].result.Failure
+      result.execution_info &&
+      result.execution_info.execution_result &&
+      'Version2' in result.execution_info.execution_result &&
+      result.execution_info.execution_result.Version2.error_message
     ) {
       // Parse execution result
-      const { error_message } = result.execution_results[0].result.Failure;
+      const { error_message } = result.execution_info.execution_result.Version2;
       const contractErrorMessagePrefix = 'User error: ';
       if (error_message.startsWith(contractErrorMessagePrefix)) {
         const errorCode = parseInt(

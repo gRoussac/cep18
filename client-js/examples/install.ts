@@ -44,12 +44,12 @@ const install = async () => {
   const contractHash = findKeyFromAccountNamedKeys(
     accountInfo,
     `cep18_contract_hash_${tokenInfo.name}`
-  ) as `hash-${string}`;
+  );
 
   const contractPackageHash = findKeyFromAccountNamedKeys(
     accountInfo,
     `cep18_contract_package_${tokenInfo.name}`
-  ) as `hash-${string}`;
+  );
 
   console.log(`... Contract Hash: ${contractHash}`);
   console.log(`... Contract Package Hash: ${contractPackageHash}`);

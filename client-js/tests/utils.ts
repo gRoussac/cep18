@@ -1,24 +1,37 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
+  AddressableEntityWrapper,
   CasperServiceByJsonRPC,
   type CLPublicKey,
   type GetDeployResult,
-  type StoredValue
+  NamedKey,
 } from 'casper-js-sdk';
 
-type Defined<Value> = Exclude<Value, null | undefined>;
-type Account = Defined<StoredValue['Account']>;
+type Account = {
+  addressableEntity: AddressableEntityWrapper;
+  namedKeys: NamedKey[];
+};
 
 export const getAccountInfo = async (
   nodeAddress: string,
   publicKey: CLPublicKey
 ): Promise<Account> => {
   const client = new CasperServiceByJsonRPC(nodeAddress);
-  const stateRootHash = await client.getStateRootHash();
-  const accountHash = publicKey.toAccountHashStr();
-  const blockState = await client.getBlockState(stateRootHash, accountHash, []);
-  const account = blockState.Account;
-  if (!account) throw Error('Not found account');
-  return account;
+  // TODO GR
+  // const { AddressableEntity } = await client.getEntity({
+  //   AccountHash: publicKey.toAccountHash().toFormattedString()
+  // });
+  const addressableEntity = await client.getAccountInfo(publicKey.toAccountHash());
+  if (!test) throw Error('Not found account');
+  const namedKeys = addressableEntity.account?.named_keys;
+
+  return {
+    addressableEntity,
+    namedKeys
+  };
 };
 
 export const findKeyFromAccountNamedKeys = (
@@ -38,6 +51,15 @@ export const sleep = async (ms: number): Promise<void> => {
 };
 
 export const expectDeployResultToSuccess = (result: GetDeployResult): void => {
-  expect(result.execution_results[0].result.Failure).toBeUndefined();
-  expect(result.execution_results[0].result.Success).toBeDefined();
+  if (
+    result.execution_info &&
+    result.execution_info.execution_result &&
+    'Version2' in result.execution_info.execution_result
+  ) {
+    const v2 = result.execution_info.execution_result.Version2;
+
+    expect(v2.error_message).toBeNull();
+  } else {
+    fail('Not found Version2 in execution_result');
+  }
 };

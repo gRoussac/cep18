@@ -1,15 +1,24 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-use-before-define */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 //  since `deployProcessed` is any type in L49 the eslint gives error for this line
 /* eslint-disable eslint-comments/disable-enable-pair */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { Parser } from '@make-software/ces-js-parser';
+
+// "@make-software/ces-js-parser": "github:zajko/ces-js-parser#feat-2.0",
+// import { Parser } from '@make-software/ces-js-parser';
+
 import {
   CasperClient,
   Contracts,
   encodeBase16,
   EventName,
   EventStream,
-  ExecutionResult
+  ExecutionResult,
+  ExecutionResultV1,
+  ExecutionResultV2
 } from 'casper-js-sdk';
 
 import { CEP18Event, CEP18EventWithDeployInfo, WithDeployInfo } from './events';
@@ -23,7 +32,7 @@ export default class EventEnabledContract {
 
   eventStream?: EventStream;
 
-  parser?: Parser;
+  parser?: any; //Parser;
 
   private readonly events: Record<
     string,
@@ -38,39 +47,41 @@ export default class EventEnabledContract {
   async setupEventStream(eventStream: EventStream) {
     this.eventStream = eventStream;
 
-    if (!this.parser) {
-      this.parser = await Parser.create(this.casperClient.nodeClient, [
-        this.contractClient.contractHash.slice(5)
-      ]);
-    }
+    // if (!this.parser) {
+    //   const contractHash = this.getContractHashWithoutPrefix();
+    //   this.parser = await Parser.create(this.casperClient.nodeClient, [
+    //     this.contractClient.contractHash.slice(5)
+    //   ]);
+    // }
 
     this.eventStream.start();
 
-    this.eventStream.subscribe(EventName.DeployProcessed, deployProcessed => {
-      const {
-        execution_result,
-        timestamp,
-        deploy_hash: deployHash
-      } = deployProcessed.body.DeployProcessed;
+    this.eventStream.subscribe(
+      EventName.TransactionProcessed,
+      transactionProcessed => {
+        const {
+          execution_result,
+          timestamp,
+          deploy_hash: deployHash
+        } = transactionProcessed.body.TransactionProcessed;
+        const typedExecutionResult = execution_result as ExecutionResult;
 
-      if (!execution_result.Success || !this.parser) {
-        return;
+        if (!isSuccessfull(typedExecutionResult) || !this.parser) {
+          return;
+        }
+        const results = this.parseExecutionResult(typedExecutionResult);
+
+        results
+          .map(
+            r =>
+              ({
+                ...r,
+                deployInfo: { deployHash, timestamp }
+              }) as CEP18EventWithDeployInfo
+          )
+          .forEach(event => this.emit(event));
       }
-
-      const results = this.parseExecutionResult(
-        execution_result as ExecutionResult
-      );
-
-      results
-        .map(
-          r =>
-          ({
-            ...r,
-            deployInfo: { deployHash, timestamp }
-          } as CEP18EventWithDeployInfo)
-        )
-        .forEach(event => this.emit(event));
-    });
+    );
   }
 
   on(name: string, listener: (event: CEP18EventWithDeployInfo) => void) {
@@ -114,14 +125,47 @@ export default class EventEnabledContract {
   parseExecutionResult(result: ExecutionResult): CEP18Event[] {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    const results = this.parser.parseExecutionResult(result);
+    const results = this.parser?.parseExecutionResult(result);
+    const isLegacy = this.isLegacy();
+    const contractHashPrefix = isLegacy ? 'hash-' : 'entity-contract-';
+    const contractPackageHashPrefix = isLegacy ? 'hash-' : 'entity-contract-';
 
     return results
-      .filter(r => r.error === null)
-      .map(r => ({
+      .filter((r: { error: null; }) => r.error === null)
+      .map((r: { event: { contractHash: Uint8Array<ArrayBufferLike>; contractPackageHash: Uint8Array<ArrayBufferLike>; }; }) => ({
         ...r.event,
-        contractHash: `hash-${encodeBase16(r.event.contractHash)}`,
-        contractPackageHash: `hash-${encodeBase16(r.event.contractPackageHash)}`
+        contractHash: `${contractHashPrefix}${encodeBase16(r.event.contractHash)}`,
+        contractPackageHash: `${contractPackageHashPrefix}${encodeBase16(r.event.contractPackageHash)}`
       })) as CEP18Event[];
   }
+
+  public isLegacy(): boolean {
+    if (!this.contractClient.contractHash) {
+      return undefined; //
+    }
+    return this.contractClient.contractHash.startsWith('hash-');
+  }
+
+  public getContractHashWithoutPrefix(): string {
+    if (!this.contractClient.contractHash) {
+      return undefined; //
+    }
+    if (this.isLegacy()) {
+      return this.contractClient.contractHash.replace('hash-', '');
+    }
+    return this.contractClient.contractHash.replace('entity-contract-', '');
+  }
 }
+
+function isSuccessfull(executionResult: ExecutionResult): boolean {
+  if ('Version1' in executionResult) {
+    const typedExecutionResult = executionResult.Version1 as ExecutionResultV1;
+    return !!typedExecutionResult.Success;
+  } if ('Version2' in executionResult) {
+    const typedExecutionResult = executionResult.Version2 as ExecutionResultV2;
+    return !typedExecutionResult.error_message;
+  }
+  throw new Error('Unknown execution result version');
+}
+
+

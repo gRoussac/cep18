@@ -32,12 +32,12 @@ const usage = async () => {
   const contractHash = findKeyFromAccountNamedKeys(
     accountInfo,
     `cep18_contract_hash_${tokenInfo.name}`
-  ) as `hash-${string}`;
+  );
 
   const contractPackageHash = findKeyFromAccountNamedKeys(
     accountInfo,
     `cep18_contract_package_${tokenInfo.name}`
-  ) as `hash-${string}`;
+  );
 
   cep18.setContractHash(contractHash, contractPackageHash);
   console.log(`... Contract Hash: ${contractHash}`);
@@ -94,7 +94,7 @@ const usage = async () => {
   // Get allowances
   const allowances = await cep18.allowances(owner.publicKey, ali.publicKey);
   console.log(
-    `...Allowances from ${owner.publicKey.toHex()} to ${ali.publicKey.toHex()} : ${allowances.toString()}`
+    `...Allowances from ${owner.publicKey.toFormattedString()} to ${ali.publicKey.toFormattedString()} : ${allowances.toString()}`
   );
 
   // Transfer tokens by allowances

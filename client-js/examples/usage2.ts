@@ -30,12 +30,12 @@ const usage = async () => {
   const contractHash = findKeyFromAccountNamedKeys(
     accountInfo,
     `cep18_contract_hash_${tokenInfo.name}`
-  ) as `hash-${string}`;
+  );
 
   const contractPackageHash = findKeyFromAccountNamedKeys(
     accountInfo,
     `cep18_contract_package_${tokenInfo.name}`
-  ) as `hash-${string}`;
+  );
 
   cep18.setContractHash(contractHash, contractPackageHash);
   console.log(`... Contract Hash: ${contractHash}`);
